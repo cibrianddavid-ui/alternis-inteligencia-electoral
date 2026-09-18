@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Consulta y analiza resultados electorales de San Luis Potosí." />
+    <title>Inteligencia Electoral SLP</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navegación principal">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">IE</div>
+          <div>
+            <strong>Inteligencia Electoral</strong>
+            <span>San Luis Potosí</span>
+          </div>
+        </div>
+
+        <nav class="tabs" role="tablist" aria-label="Módulos de análisis">
+          <button class="tab active" role="tab" aria-selected="true" data-tab="asistente">
+            <span class="tab-icon">✦</span><span>Asistente electoral</span>
+          </button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="graficos">
+            <span class="tab-icon">▥</span><span>Resultados gráficos</span>
+          </button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="cartografia">
+            <span class="tab-icon">◇</span><span>Cartografía electoral</span>
+          </button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="semaforo">
+            <span class="tab-icon">◉</span><span>Semáforo de posicionamiento electoral</span>
+          </button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="discursos">
+            <span class="tab-icon">▤</span><span>Discursos y posicionamientos</span>
+          </button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="campania">
+            <span class="tab-icon">☷</span><span>Campaña y tareas</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-status">
+          <span class="status-dot" id="status-dot"></span>
+          <span id="status-text">Conectando con los datos…</span>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <section id="asistente" class="panel active" role="tabpanel">
+          <header class="topbar">
+            <div>
+              <p class="eyebrow">CONSULTA EN LENGUAJE NATURAL</p>
+              <h1>Asistente electoral</h1>
+            </div>
+            <button id="clear-chat" class="secondary-button" type="button">Nueva conversación</button>
+          </header>
+
+          <div class="chat-layout">
+            <div class="chat-card">
+              <div id="messages" class="messages" aria-live="polite">
+                <article class="message assistant-message">
+                  <div class="avatar">IE</div>
+                  <div class="bubble">
+                    <p>Puedo consultar resultados por municipio, sección, distrito, elección y partido.</p>
+                    <p>También puedo comparar fuerzas políticas, calcular márgenes, participación y competitividad.</p>
+                  </div>
+                </article>
+              </div>
+
+              <div class="suggestions" aria-label="Preguntas sugeridas">
+                <button type="button">¿Quién ganó en cada municipio y por cuánto?</button>
+                <button type="button">Compara PAN contra PVEM en Mexquitic de Carmona</button>
+                <button type="button">¿Cuáles fueron las secciones más competidas?</button>
+              </div>
+
+              <form id="chat-form" class="composer">
+                <label for="question" class="sr-only">Escribe una pregunta electoral</label>
+                <textarea id="question" rows="1" maxlength="1200" placeholder="Pregunta sobre los resultados electorales…" required></textarea>
+                <button id="send-button" type="submit" aria-label="Enviar pregunta">Enviar</button>
+              </form>
+              <p class="composer-hint">Enter para enviar · Shift + Enter para salto de línea</p>
+            </div>
+
+            <aside class="results-card" aria-label="Datos consultados">
+              <div class="results-heading">
+                <div>
+                  <p class="eyebrow">RESULTADO DE LA CONSULTA</p>
+                  <h2>Datos utilizados</h2>
+                </div>
+                <span id="row-count" class="row-count">Sin consulta</span>
+              </div>
+              <div id="data-table" class="table-wrap empty-table">
+                <div class="empty-state">
+                  <span>⌁</span>
+                  <p>La tabla aparecerá después de realizar una consulta.</p>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="graficos" class="panel" role="tabpanel">
+          <header class="topbar graphics-topbar">
+            <div>
+              <p class="eyebrow">ANÁLISIS COMPARATIVO</p>
+              <h1>Resultados gráficos</h1>
+            </div>
+            <button id="download-chart" class="secondary-button" type="button" disabled>Descargar gráfica</button>
+          </header>
+
+          <div class="analysis-layout">
+            <aside class="filter-card">
+              <div class="mode-selector" role="group" aria-label="Modo de análisis">
+                <button class="mode-button active" type="button" data-mode="temporal">Evolución</button>
+                <button class="mode-button" type="button" data-mode="diferenciado">Voto diferenciado</button>
+                <button class="mode-button" type="button" data-mode="coaliciones">Coaliciones</button>
+              </div>
+
+              <form id="graphics-form" class="graphics-form">
+                <label class="field">
+                  <span>Nivel de agregación</span>
+                  <select id="level-filter" required></select>
+                </label>
+
+                <label class="field">
+                  <span>Unidad geográfica</span>
+                  <select id="unit-filter" required></select>
+                </label>
+
+                <fieldset class="check-field">
+                  <legend>Años</legend>
+                  <div id="year-options" class="check-options compact-options"></div>
+                </fieldset>
+
+                <fieldset class="check-field">
+                  <legend>Tipos de elección</legend>
+                  <div id="election-options" class="check-options"></div>
+                </fieldset>
+
+                <fieldset id="individual-party-field" class="check-field">
+                  <legend>Partidos a comparar</legend>
+                  <input id="party-search" class="search-input" type="search" placeholder="Buscar partido…" autocomplete="off" />
+                  <div id="party-options" class="check-options party-options"></div>
+                </fieldset>
+
+                <section id="coalition-builder" class="coalition-builder" hidden>
+                  <div class="builder-heading">
+                    <div>
+                      <strong>Simulación de coaliciones</strong>
+                      <small>Crea cada bloque y marca uno o más partidos. Solo se graficarán las coaliciones.</small>
+                    </div>
+                    <button id="add-coalition" class="text-button" type="button">+ Agregar</button>
+                  </div>
+                  <div id="coalition-list"></div>
+                </section>
+
+                <label class="field">
+                  <span>Métrica principal</span>
+                  <select id="metric-filter">
+                    <option value="porcentaje">Porcentaje de votación</option>
+                    <option value="votos">Votos</option>
+                  </select>
+                </label>
+
+                <button id="generate-chart" class="primary-button" type="submit">Generar comparación</button>
+                <p id="graphics-error" class="form-error" role="alert"></p>
+              </form>
+            </aside>
+
+            <div class="visualization-column">
+              <section id="graphics-intro" class="graphics-intro">
+                <span>▥</span>
+                <h2>Construye una comparación electoral</h2>
+                <p>Selecciona territorio, elecciones, años y fuerzas políticas. Puedes analizar votos absolutos o porcentaje de votación.</p>
+              </section>
+
+              <section id="graphics-results" hidden>
+                <div id="summary-cards" class="summary-cards"></div>
+                <article class="chart-card">
+                  <div class="chart-heading">
+                    <div>
+                      <p class="eyebrow" id="chart-eyebrow">RESULTADOS</p>
+                      <h2 id="chart-title">Comparación electoral</h2>
+                    </div>
+                    <div class="chart-switch" role="group" aria-label="Tipo de gráfica">
+                      <button type="button" class="chart-type active" data-chart="bar">Barras</button>
+                      <button type="button" class="chart-type" data-chart="line">Líneas</button>
+                    </div>
+                  </div>
+                  <div id="electoral-chart" class="electoral-chart"></div>
+                  <div id="chart-warnings" class="chart-warnings"></div>
+                </article>
+
+                <article class="analysis-table-card">
+                  <div class="results-heading">
+                    <div>
+                      <p class="eyebrow">DETALLE</p>
+                      <h2>Datos de la comparación</h2>
+                    </div>
+                    <button id="download-data" class="secondary-button" type="button">Descargar CSV</button>
+                  </div>
+                  <div id="graphics-table" class="table-wrap"></div>
+                </article>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <section id="cartografia" class="panel" role="tabpanel">
+          <div class="placeholder-page">
+            <span class="module-number">03</span>
+            <p class="eyebrow">MÓDULO PREPARADO</p>
+            <h1>Cartografía electoral</h1>
+            <p>Aquí se integrarán los archivos geográficos para explorar polígonos por sección y distrito sobre un mapa electoral.</p>
+            <div class="map-placeholder"><span>Archivos cartográficos pendientes</span></div>
+          </div>
+        </section>
+
+        <section id="semaforo" class="panel" role="tabpanel">
+          <header class="topbar"><div><p class="eyebrow">COBERTURA EN MEDIOS</p><h1>Semáforo de posicionamiento electoral</h1></div></header>
+          <div class="feature-card">
+            <p>Busca noticias por nombre y periodo. Las expresiones muestran citas y enlaces a las notas donde aparecen; su presencia no confirma lo que afirman.</p>
+            <form id="news-form" class="feature-form">
+              <label class="field"><span>Nombre completo</span><input id="news-name" required minlength="3" placeholder="Nombre y apellidos" /></label>
+              <label class="field"><span>Desde</span><input id="news-from" type="date" required /></label>
+              <label class="field"><span>Hasta</span><input id="news-to" type="date" required /></label>
+              <button class="primary-button" type="submit">Buscar notas</button>
+            </form>
+            <p id="news-status" role="status"></p>
+            <div id="news-results"></div>
+          </div>
+        </section>
+
+        <section id="discursos" class="panel" role="tabpanel">
+          <header class="topbar"><div><p class="eyebrow">REDACCIÓN RÁPIDA</p><h1>Discursos y posicionamientos</h1></div><button id="speech-clear" class="secondary-button" type="button">Nuevo discurso</button></header>
+          <div class="speech-chat-card">
+            <div id="speech-messages" class="speech-messages" aria-live="polite">
+              <div class="speech-message assistant">Cuéntame para qué ocasión necesitas el discurso, su tema y duración. Puedo preparar un borrador y ajustarlo contigo.</div>
+            </div>
+            <form id="speech-form" class="speech-composer">
+              <textarea id="speech-prompt" rows="3" required placeholder="Ej.: Redacta un discurso de un minuto para la presentación pública de mi candidatura, con tono cercano..."></textarea>
+              <button class="primary-button" type="submit">Enviar</button>
+            </form>
+            <p id="speech-status" class="composer-hint" role="status">Para generar discursos configura GROQ_API_KEY en .env.</p>
+            <div class="download-buttons speech-actions">
+              <button class="secondary-button" type="button" data-speech-action="txt" disabled>Descargar TXT</button>
+              <button class="secondary-button" type="button" data-speech-action="pdf" disabled>Descargar PDF</button>
+              <button class="secondary-button" type="button" data-speech-action="copy" disabled>Copiar texto</button>
+              <button class="secondary-button" type="button" data-speech-action="share" disabled>Compartir</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="campania" class="panel" role="tabpanel">
+          <header class="topbar"><div><p class="eyebrow">ORGANIZACIÓN</p><h1>Campaña y tareas</h1></div></header>
+          <p class="campaign-intro">Crea metas, registra personas y asigna tareas. Arrastra cada tarea entre columnas o cambia su estado con el menú de la tarjeta.</p>
+          <div class="campaign-setup">
+            <form id="goal-form" class="campaign-form"><h2>Nueva meta</h2><input name="titulo" required maxlength="180" placeholder="Ej.: Preparar evento público" /><input name="descripcion" maxlength="2000" placeholder="Descripción (opcional)" /><button class="primary-button">Añadir meta</button><div id="goal-list" class="chip-list"></div></form>
+            <form id="person-form" class="campaign-form"><h2>Nueva persona</h2><input name="nombre" required maxlength="120" placeholder="Nombre" /><input name="contacto" maxlength="180" placeholder="Contacto (opcional)" /><button class="primary-button">Añadir persona</button><div id="person-list" class="chip-list"></div></form>
+          </div>
+          <form id="task-form" class="campaign-form task-creator"><h2>Nueva tarea</h2><div class="task-fields"><input name="titulo" required maxlength="180" placeholder="Título de la tarea" /><select name="meta_id" id="task-goal"><option value="">Sin meta</option></select><select name="persona_id" id="task-person"><option value="">Sin responsable</option></select><input name="fecha_limite" type="date" /><textarea name="descripcion" maxlength="2000" rows="2" placeholder="Detalles (opcional)"></textarea><button class="primary-button">Crear tarea</button></div></form>
+          <p id="campaign-status" role="status"></p>
+          <div id="task-board" class="task-board"></div>
+        </section>
+      </main>
+    </div>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <script src="/assets/app.js" defer></script>
+  </body>
+</html>
