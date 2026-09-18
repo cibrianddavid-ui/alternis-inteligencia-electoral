@@ -1,6 +1,6 @@
 # Plataforma de Inteligencia Electoral
 
-Aplicación web local con FastAPI y un frontend ligero. Incluye el Asistente electoral y un módulo interactivo de resultados gráficos; deja preparados los módulos de cartografía electoral y semáforo de posicionamiento.
+Aplicación web local con FastAPI y un frontend ligero. Incluye el Asistente electoral, un módulo interactivo de resultados gráficos, un semáforo de posicionamiento que rastrea la actividad de una persona en noticias en un intervalo de fechas establecido por el usuario, un asistente de creación de posicionamientos y archivos que permiten su descarga en archivo pdf, txt o incluso la copia directa, además de un com de creación de metas, tareas y vaciado de personas a los cuales se les asignan las diversas tareas las cuales pueden posicionarse en diversas fases de completitud como tarjetas; deja preparados los módulos de cartografía electoral, será necesario agregar una pestaña de tablero en la cual se vea la actividad que cada uno está realizando, las metas establecidas y los estatus.
 
 ## Requisitos
 
