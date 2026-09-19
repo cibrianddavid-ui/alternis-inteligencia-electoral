@@ -8,5 +8,6 @@ requests>=2.32,<3
 trafilatura>=1.12,<3
 lxml_html_clean>=0.4,<1
 spacy>=3.8,<4
+https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-3.8.0/es_core_news_sm-3.8.0-py3-none-any.whl
 python-docx>=1.2,<2
 reportlab>=4.2,<5

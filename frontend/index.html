@@ -6,7 +6,7 @@
     <meta name="description" content="Consulta y analiza resultados electorales de San Luis Potosí." />
     <title>Inteligencia Electoral SLP</title>
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
-    <link rel="stylesheet" href="/assets/styles.css" />
+    <link rel="stylesheet" href="/assets/styles.css?v=5" />
   </head>
   <body>
     <div class="app-shell">
@@ -220,7 +220,7 @@
         <section id="semaforo" class="panel" role="tabpanel">
           <header class="topbar"><div><p class="eyebrow">COBERTURA EN MEDIOS</p><h1>Semáforo de posicionamiento electoral</h1></div></header>
           <div class="feature-card">
-            <p>Busca noticias por nombre y periodo. Las expresiones muestran citas y enlaces a las notas donde aparecen; su presencia no confirma lo que afirman.</p>
+            <p>Busca noticias por nombre y periodo. Obtendrás un resumen de lo publicado, los temas con los que se asocia a la persona y una lectura de lo que representa esa cobertura. No equivale a una encuesta ni confirma las afirmaciones de las notas.</p>
             <form id="news-form" class="feature-form">
               <label class="field"><span>Nombre completo</span><input id="news-name" required minlength="3" placeholder="Nombre y apellidos" /></label>
               <label class="field"><span>Desde</span><input id="news-from" type="date" required /></label>
@@ -254,18 +254,23 @@
 
         <section id="campania" class="panel" role="tabpanel">
           <header class="topbar"><div><p class="eyebrow">ORGANIZACIÓN</p><h1>Campaña y tareas</h1></div></header>
-          <p class="campaign-intro">Crea metas, registra personas y asigna tareas. Arrastra cada tarea entre columnas o cambia su estado con el menú de la tarjeta.</p>
-          <div class="campaign-setup">
-            <form id="goal-form" class="campaign-form"><h2>Nueva meta</h2><input name="titulo" required maxlength="180" placeholder="Ej.: Preparar evento público" /><input name="descripcion" maxlength="2000" placeholder="Descripción (opcional)" /><button class="primary-button">Añadir meta</button><div id="goal-list" class="chip-list"></div></form>
-            <form id="person-form" class="campaign-form"><h2>Nueva persona</h2><input name="nombre" required maxlength="120" placeholder="Nombre" /><input name="contacto" maxlength="180" placeholder="Contacto (opcional)" /><button class="primary-button">Añadir persona</button><div id="person-list" class="chip-list"></div></form>
-          </div>
-          <form id="task-form" class="campaign-form task-creator"><h2>Nueva tarea</h2><div class="task-fields"><input name="titulo" required maxlength="180" placeholder="Título de la tarea" /><select name="meta_id" id="task-goal"><option value="">Sin meta</option></select><select name="persona_id" id="task-person"><option value="">Sin responsable</option></select><input name="fecha_limite" type="date" /><textarea name="descripcion" maxlength="2000" rows="2" placeholder="Detalles (opcional)"></textarea><button class="primary-button">Crear tarea</button></div></form>
+          <p class="campaign-intro">Del objetivo a la ejecución: mide el avance por meta, persona y área, identifica atrasos y organiza el trabajo diario.</p>
+          <nav class="campaign-view-tabs" aria-label="Vistas de campaña"><button type="button" class="active" data-campaign-view="dashboard">Tablero ejecutivo</button><button type="button" data-campaign-view="work">Planeación y tareas</button></nav>
           <p id="campaign-status" role="status"></p>
+          <div id="campaign-dashboard" class="campaign-view"><div id="campaign-kpis" class="campaign-kpis"></div><div class="dashboard-grid"><section class="dashboard-card"><h2>Avance por meta</h2><div id="goal-progress"></div></section><section class="dashboard-card"><h2>Trabajo por persona</h2><div id="person-performance"></div></section><section class="dashboard-card wide"><h2>Avance por área</h2><div id="area-performance"></div></section><section class="dashboard-card wide"><h2>Alertas de campaña</h2><div id="campaign-alerts"></div></section></div></div>
+          <div id="campaign-work" class="campaign-view" hidden>
+          <div class="campaign-setup">
+            <form id="area-form" class="campaign-form"><h2>Nueva área</h2><input name="nombre" required maxlength="120" placeholder="Ej.: Operación territorial" /><input name="descripcion" maxlength="500" placeholder="Descripción (opcional)" /><button class="primary-button">Añadir área</button><div id="area-list" class="chip-list"></div></form>
+            <form id="person-form" class="campaign-form"><h2>Nueva persona</h2><input name="nombre" required maxlength="120" placeholder="Nombre" /><input name="contacto" maxlength="180" placeholder="Contacto (opcional)" /><select name="area_id" id="person-area"><option value="">Sin área</option></select><button class="primary-button">Añadir persona</button><div id="person-list" class="chip-list"></div></form>
+            <form id="goal-form" class="campaign-form campaign-form-wide"><h2>Nueva meta</h2><input name="titulo" required maxlength="180" placeholder="Ej.: Cubrir las secciones prioritarias" /><input name="descripcion" maxlength="2000" placeholder="Descripción (opcional)" /><select name="responsable_id" id="goal-person"><option value="">Sin responsable</option></select><select name="area_id" id="goal-area"><option value="">Sin área</option></select><input name="fecha_limite" type="date" /><input name="indicador" maxlength="180" placeholder="Indicador: secciones cubiertas" /><input name="objetivo" type="number" min="0" step="any" placeholder="Objetivo: 20" /><button class="primary-button">Añadir meta</button><div id="goal-list" class="chip-list"></div></form>
+          </div>
+          <form id="task-form" class="campaign-form task-creator"><h2>Nueva tarea</h2><div class="task-fields"><input name="titulo" required maxlength="180" placeholder="Título de la tarea" /><select name="meta_id" id="task-goal"><option value="">Sin meta</option></select><select name="persona_id" id="task-person"><option value="">Sin responsable</option></select><input name="fecha_limite" type="date" /><select name="prioridad"><option value="baja">Prioridad baja</option><option value="media" selected>Prioridad media</option><option value="alta">Prioridad alta</option><option value="critica">Prioridad crítica</option></select><select name="peso"><option value="1">1 punto</option><option value="3" selected>3 puntos</option><option value="5">5 puntos</option><option value="8">8 puntos</option></select><input name="evidencia" maxlength="1000" placeholder="Evidencia o enlace (opcional)" /><textarea name="descripcion" maxlength="2000" rows="2" placeholder="Detalles (opcional)"></textarea><button class="primary-button">Crear tarea</button></div></form>
           <div id="task-board" class="task-board"></div>
+          </div>
         </section>
       </main>
     </div>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-    <script src="/assets/app.js" defer></script>
+    <script src="/assets/app.js?v=6" defer></script>
   </body>
 </html>

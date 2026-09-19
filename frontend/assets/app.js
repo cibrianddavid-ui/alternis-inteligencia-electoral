@@ -478,6 +478,44 @@ let recentNews = [];
 
 const newsForm = document.querySelector('#news-form');
 
+function renderWordCloud(items) {
+  if (!items.length) return '<p>No se identificaron palabras o frases repetidas en al menos dos notas.</p>';
+  const frequencies = items.map(item => Number(item.noticias) || 1);
+  const minimum = Math.min(...frequencies);
+  const maximum = Math.max(...frequencies);
+  const colors = ['#174b37', '#9a6b20', '#315d72', '#743f45', '#52705c'];
+  return `<div class="word-cloud" role="img" aria-label="Nube de palabras y frases asociadas">${items.map((item, index) => {
+    const relative = maximum === minimum ? 0.5 : (item.noticias - minimum) / (maximum - minimum);
+    const fontSize = 16 + Math.round(relative * 28);
+    const weight = 550 + Math.round(relative * 250);
+    return `<span style="font-size:${fontSize}px;font-weight:${weight};color:${colors[index % colors.length]}" title="Aparece en ${item.noticias} notas de ${item.fuentes} fuentes">${escapeHtml(item.frase)}<small>${item.noticias}</small></span>`;
+  }).join('')}</div><p class="cloud-help">El tamaño representa el número de notas distintas en las que aparece cada expresión. El número pequeño muestra esa frecuencia.</p>`;
+}
+
+function renderToneTrafficLight(semaforo) {
+  const categories = [
+    ['negativo', 'Negativas o críticas', '#b63a3a'],
+    ['neutro', 'Neutras', '#c49a2c'],
+    ['positivo', 'Positivas', '#2f855a'],
+  ];
+  if (!semaforo || !semaforo.total) return '<p>No hay suficientes notas para calcular el tono de la cobertura.</p>';
+  return `<div class="tone-grid">${categories.map(([key, label, color]) => {
+    const item = semaforo[key] || { porcentaje: 0, notas: 0 };
+    return `<article class="tone-card"><span class="tone-light" style="background:${color}"></span><div><strong>${Number(item.porcentaje).toFixed(1)}%</strong><p>${label}</p><small>${item.notas} ${item.notas === 1 ? 'nota' : 'notas'}</small></div></article>`;
+  }).join('')}</div><div class="tone-bar" aria-label="Distribución del tono">${categories.map(([key,,color]) => `<span style="width:${semaforo[key]?.porcentaje || 0}%;background:${color}"></span>`).join('')}</div><p class="tone-note">${escapeHtml(semaforo.aviso || '')}</p>`;
+}
+
+function renderCoverageByTone(analysis) {
+  const tone = analysis?.por_tono;
+  if (!tone) return '';
+  const rows = [
+    ['negativo', 'Qué dicen las notas negativas o críticas'],
+    ['neutro', 'Qué dicen las notas neutras'],
+    ['positivo', 'Qué dicen las notas positivas'],
+  ];
+  return `<div class="tone-summaries">${rows.map(([key, title]) => `<article class="tone-summary ${key}"><h3>${title}</h3><p>${escapeHtml(tone[key] || 'No hay evidencia suficiente en esta categoría.')}</p></article>`).join('')}</div>`;
+}
+
 document.querySelector('#news-to').value = new Date().toISOString().slice(0, 10);
 document.querySelector('#news-from').value = `${new Date().getFullYear()}-01-01`;
 
@@ -499,10 +537,11 @@ newsForm.addEventListener('submit', async (event) => {
     if (!response.ok) throw new Error(data.detail || 'Error al buscar noticias.');
     recentNews = data.noticias;
     status.textContent = `${recentNews.length} notas encontradas · ${data.asociaciones.length} expresiones presentes en al menos dos notas. ${data.aviso}`;
-    target.innerHTML = `<h2>Expresiones relacionadas</h2>${data.asociaciones.length
-      ? `<ul class="evidence-list">${data.asociaciones.map(item => `<li><strong>${escapeHtml(item.frase)}</strong> · ${item.noticias} notas, ${item.fuentes} fuentes<br><small>${escapeHtml(item.contexto)}</small><br>${item.enlaces.map((url, idx) => `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">Fuente ${idx + 1}</a>`).join(' · ')}</li>`).join('')}</ul>`
-      : '<p>No hubo expresiones repetidas en al menos dos notas. Revisa las fuentes encontradas.</p>'}
-      <h2>Notas consultadas</h2><ul class="evidence-list">${recentNews.map(n => `<li><a href="${escapeHtml(n.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(n.titulo)}</a><br><small>${escapeHtml(n.fuente)} · ${escapeHtml(n.fecha_buscador || 'Fecha no indicada')} · ${n.texto_disponible ? 'Texto extraído' : 'Solo título y resumen'}</small></li>`).join('')}</ul>`;
+    const analysis = data.analisis || {};
+    target.innerHTML = `<section class="media-analysis"><p class="eyebrow">SÍNTESIS GENERAL</p><h2>Resumen de toda la cobertura</h2><p class="coverage-summary">${escapeHtml(analysis.resumen || 'No hay resumen disponible.')}</p>${renderCoverageByTone(analysis)}<h3>¿Qué representa esta cobertura?</h3><p>${escapeHtml(analysis.lectura || 'La cobertura disponible no permite una interpretación suficiente.')}</p><small>Alcance analizado: ${escapeHtml(analysis.alcance || `${recentNews.length} notas`)} · Síntesis: ${escapeHtml(analysis.metodo_resumen || 'automática')}</small></section>
+      <section class="tone-section"><p class="eyebrow">TONO DE LA COBERTURA</p><h2>Semáforo de notas</h2>${renderToneTrafficLight(data.semaforo)}</section>
+      <section class="cloud-section"><p class="eyebrow">ASOCIACIONES RECURRENTES</p><h2>Palabras y frases más mencionadas</h2>${renderWordCloud(data.asociaciones || [])}</section>
+      <h2>Notas consultadas</h2><ul class="evidence-list">${recentNews.map(n => `<li><span class="tone-badge ${escapeHtml(n.tono || 'neutro')}">${escapeHtml(n.tono || 'neutro')}</span> <a href="${escapeHtml(n.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(n.titulo)}</a><br><small>${escapeHtml(n.fuente)} · ${escapeHtml(n.fecha_buscador || 'Fecha no indicada')} · ${n.texto_disponible ? 'Texto extraído' : 'Solo título y resumen'}</small></li>`).join('')}</ul>`;
   } catch (error) { status.textContent = error.message; target.innerHTML = ''; recentNews = []; }
   finally { button.disabled = false; }
 });
@@ -581,7 +620,7 @@ document.querySelectorAll('[data-speech-action]').forEach(button => button.addEv
 }));
 
 // Tablero de campaña persistido en SQLite mediante la API.
-let campaign = { metas: [], personas: [], tareas: [] };
+let campaign = { areas: [], metas: [], personas: [], tareas: [] };
 const campaignStatus = document.querySelector('#campaign-status');
 async function campaignRequest(path, options = {}) {
   const response = await fetch(`/api/campania${path}`, options);
@@ -602,7 +641,10 @@ function campaignOption(select, rows, label) {
 function renderCampaign() {
   campaignOption(document.querySelector('#task-goal'), campaign.metas, 'Sin meta');
   campaignOption(document.querySelector('#task-person'), campaign.personas, 'Sin responsable');
-  for (const [key, target, label] of [['metas', '#goal-list', 'titulo'], ['personas', '#person-list', 'nombre']]) {
+  campaignOption(document.querySelector('#person-area'), campaign.areas, 'Sin área');
+  campaignOption(document.querySelector('#goal-area'), campaign.areas, 'Sin área');
+  campaignOption(document.querySelector('#goal-person'), campaign.personas, 'Sin responsable');
+  for (const [key, target, label] of [['areas', '#area-list', 'nombre'], ['metas', '#goal-list', 'titulo'], ['personas', '#person-list', 'nombre']]) {
     document.querySelector(target).innerHTML = campaign[key].map(row =>
       `<span class="campaign-chip">${escapeHtml(row[label])}<button type="button" data-delete="${key}" data-id="${row.id}" aria-label="Eliminar ${escapeHtml(row[label])}">×</button></span>`).join('') || '<small>Sin registros todavía</small>';
   }
@@ -612,25 +654,52 @@ function renderCampaign() {
     return `<section class="task-column" data-column="${status}"><h2>${title} <span>${rows.length}</span></h2><div class="task-stack">${rows.map(t => {
       const goal = campaign.metas.find(m => m.id === t.meta_id);
       const person = campaign.personas.find(p => p.id === t.persona_id);
-      return `<article class="task-card" draggable="true" data-task="${t.id}"><strong>${escapeHtml(t.titulo)}</strong><p>${escapeHtml(t.descripcion || '')}</p><small>${goal ? 'Meta: ' + escapeHtml(goal.titulo) : 'Sin meta'} · ${person ? 'Responsable: ' + escapeHtml(person.nombre) : 'Sin responsable'}${t.fecha_limite ? ' · Hasta: ' + escapeHtml(t.fecha_limite) : ''}</small><div class="task-controls"><select data-state="${t.id}" aria-label="Estado de ${escapeHtml(t.titulo)}">${Object.entries(labels).map(([code, name]) => `<option value="${code}" ${code === status ? 'selected' : ''}>${name}</option>`).join('')}</select><button class="text-button" data-delete="tareas" data-id="${t.id}" aria-label="Eliminar tarea">Eliminar</button></div></article>`;
+      return `<article class="task-card priority-${t.prioridad || 'media'}" draggable="true" data-task="${t.id}"><div class="task-card-heading"><strong>${escapeHtml(t.titulo)}</strong><span>${escapeHtml(t.prioridad || 'media')} · ${t.peso || 3} pts</span></div><p>${escapeHtml(t.descripcion || '')}</p><small>${goal ? 'Meta: ' + escapeHtml(goal.titulo) : 'Sin meta'} · ${person ? 'Responsable: ' + escapeHtml(person.nombre) : 'Sin responsable'}${t.fecha_limite ? ' · Hasta: ' + escapeHtml(t.fecha_limite) : ''}${t.evidencia ? ' · Evidencia: ' + escapeHtml(t.evidencia) : ''}</small><div class="task-controls"><select data-state="${t.id}" aria-label="Estado de ${escapeHtml(t.titulo)}">${Object.entries(labels).map(([code, name]) => `<option value="${code}" ${code === status ? 'selected' : ''}>${name}</option>`).join('')}</select><button class="text-button" data-delete="tareas" data-id="${t.id}" aria-label="Eliminar tarea">Eliminar</button></div></article>`;
     }).join('') || '<p class="task-empty">Suelta una tarea aquí</p>'}</div></section>`;
   }).join('');
+  renderCampaignDashboard();
 }
-for (const [id, key] of [['#goal-form', 'metas'], ['#person-form', 'personas'], ['#task-form', 'tareas']]) {
+function metricCard(label, value, tone = '') { return `<article class="campaign-kpi ${tone}"><span>${label}</span><strong>${value}</strong></article>`; }
+function progressRow(name, done, total, extra = '') {
+  const percent = total ? Math.round(done * 100 / total) : 0;
+  return `<div class="progress-row"><div><strong>${escapeHtml(name)}</strong><span>${done}/${total} finalizadas ${extra}</span></div><b>${percent}%</b><div class="progress-track"><i style="width:${percent}%"></i></div></div>`;
+}
+function renderCampaignDashboard() {
+  const tasks = campaign.tareas; const today = new Date().toISOString().slice(0, 10);
+  const count = state => tasks.filter(t => t.estado === state).length;
+  const overdue = tasks.filter(t => t.estado !== 'finalizada' && t.fecha_limite && t.fecha_limite < today).length;
+  document.querySelector('#campaign-kpis').innerHTML = metricCard('Metas activas', campaign.metas.length) + metricCard('Por empezar', count('por_hacer')) + metricCard('En proceso', count('en_proceso'), 'blue') + metricCard('Finalizadas', count('finalizada'), 'green') + metricCard('Vencidas', overdue, overdue ? 'red' : '');
+  document.querySelector('#goal-progress').innerHTML = campaign.metas.map(g => { const rows = tasks.filter(t => t.meta_id === g.id); return progressRow(g.titulo, rows.filter(t => t.estado === 'finalizada').length, rows.length, g.fecha_limite ? `· vence ${g.fecha_limite}` : ''); }).join('') || '<p class="empty-dashboard">Aún no hay metas.</p>';
+  document.querySelector('#person-performance').innerHTML = campaign.personas.map(p => { const rows = tasks.filter(t => t.persona_id === p.id); const done = rows.filter(t => t.estado === 'finalizada'); const points = done.reduce((sum, t) => sum + Number(t.peso || 3), 0); return progressRow(p.nombre, done.length, rows.length, `· ${points} puntos`); }).join('') || '<p class="empty-dashboard">Aún no hay personas.</p>';
+  document.querySelector('#area-performance').innerHTML = campaign.areas.map(a => { const people = campaign.personas.filter(p => p.area_id === a.id).map(p => p.id); const goals = campaign.metas.filter(g => g.area_id === a.id).map(g => g.id); const rows = tasks.filter(t => people.includes(t.persona_id) || goals.includes(t.meta_id)); return progressRow(a.nombre, rows.filter(t => t.estado === 'finalizada').length, rows.length); }).join('') || '<p class="empty-dashboard">Crea áreas para comparar equipos.</p>';
+  const alerts = [];
+  tasks.filter(t => t.estado !== 'finalizada' && t.fecha_limite && t.fecha_limite < today).forEach(t => alerts.push(`Tarea vencida: ${t.titulo}`));
+  tasks.filter(t => !t.persona_id).forEach(t => alerts.push(`Sin responsable: ${t.titulo}`));
+  campaign.metas.filter(g => !tasks.some(t => t.meta_id === g.id)).forEach(g => alerts.push(`Meta sin tareas: ${g.titulo}`));
+  document.querySelector('#campaign-alerts').innerHTML = alerts.slice(0, 10).map(a => `<p class="campaign-alert">${escapeHtml(a)}</p>`).join('') || '<p class="campaign-ok">No hay alertas operativas.</p>';
+}
+for (const [id, key] of [['#area-form', 'areas'], ['#goal-form', 'metas'], ['#person-form', 'personas'], ['#task-form', 'tareas']]) {
   document.querySelector(id).addEventListener('submit', async event => {
     event.preventDefault();
     const form = event.currentTarget;
     const values = Object.fromEntries(new FormData(form));
+    ['meta_id', 'persona_id', 'responsable_id', 'area_id'].forEach(field => { if (field in values) values[field] = values[field] ? Number(values[field]) : null; });
+    if (key === 'metas') { values.objetivo = values.objetivo ? Number(values.objetivo) : null; values.fecha_limite ||= null; }
+    if (key === 'personas') values.area_id = values.area_id ? Number(values.area_id) : null;
     if (key === 'tareas') {
-      values.meta_id = values.meta_id ? Number(values.meta_id) : null;
-      values.persona_id = values.persona_id ? Number(values.persona_id) : null;
       values.fecha_limite ||= null;
+      values.peso = Number(values.peso);
     }
     try { await campaignRequest(`/${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) });
       form.reset(); await loadCampaign(); campaignStatus.textContent = 'Guardado.';
     } catch (error) { campaignStatus.textContent = error.message; }
   });
 }
+document.querySelectorAll('[data-campaign-view]').forEach(button => button.addEventListener('click', () => {
+  document.querySelectorAll('[data-campaign-view]').forEach(item => item.classList.toggle('active', item === button));
+  document.querySelector('#campaign-dashboard').hidden = button.dataset.campaignView !== 'dashboard';
+  document.querySelector('#campaign-work').hidden = button.dataset.campaignView !== 'work';
+}));
 document.querySelector('#campania').addEventListener('click', async event => {
   const button = event.target.closest('[data-delete]');
   if (!button || !confirm('¿Eliminar este registro?')) return;

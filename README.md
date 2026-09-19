@@ -1,17 +1,6 @@
 # Plataforma de Inteligencia Electoral
 
-Aplicación web local con FastAPI y un frontend ligero. Incluye:
-- El Asistente electoral
-- Un módulo interactivo de resultados gráficos
-- Semáforo de posicionamiento que rastrea la actividad de una persona en noticias en un intervalo de fechas establecido por el usuario
-- Asistente de creación de posicionamientos y archivos que permiten su descarga en archivo pdf, txt o incluso la copia directa
-- Sección de creación de metas, tareas y vaciado de personas a los cuales se les asignan las diversas tareas las cuales pueden posicionarse en diversas fases de completitud como tarjetas
-
-Consideraciones
-- Deja preparados los módulos de cartografía electoral
-- Será necesario agregar una pestaña de tablero en la cual se vea la actividad que cada uno está realizando, las metas establecidas y los estatus.
-- Es necesario realizar el diagrama de arquitectura
-- Aún queda pendiente realizar la autentificación y asignación de roles e información según la adquisición
+Aplicación web local con FastAPI y un frontend ligero. Incluye el Asistente electoral y un módulo interactivo de resultados gráficos; deja preparados los módulos de cartografía electoral y semáforo de posicionamiento.
 
 ## Requisitos
 
@@ -60,7 +49,7 @@ En `requirements.txt` se escriben **nombres de paquetes**, no los comandos `pip 
 Tras `pip install -r requirements.txt`, instala una sola vez el modelo de español:
 
 ```bash
-python -m spacy download es_core_news_sm
+El modelo de español se instala automáticamente desde `requirements.txt`. Para instalarlo manualmente en desarrollo local: `python -m spacy download es_core_news_sm`.
 ```
 
 Si ya habías instalado los paquetes antes de esta corrección, ejecuta
@@ -74,4 +63,4 @@ Edita `.env` y agrega `SERPAPI_KEY=tu_clave_real`. No compartas la clave ni suba
 
 En **Discursos y posicionamientos**, escribe una petición libre para generar un discurso con la clave `GROQ_API_KEY` existente. Puedes pedir ajustes en el mismo chat. El último borrador se descarga como TXT o PDF y se puede copiar o compartir con la función de compartir del dispositivo. La conversación se mantiene mientras la página siga abierta.
 
-En **Campaña y tareas**, crea metas y personas, y luego asigna cada tarea a una meta y una persona. Mueve tareas arrastrándolas entre **Por hacer**, **En proceso** y **Finalizada**, o usa el selector de estado, útil también en el celular. Metas, personas y tareas se guardan en `data/campania.db` y persisten entre reinicios. Conserva ese archivo al actualizar el proyecto; en un servidor con disco efímero necesitarás un volumen persistente para conservarlas.
+En **Campaña y tareas**, el tablero ejecutivo resume metas, tareas por estado, vencimientos y avance por persona y área. En la vista de planeación puedes crear áreas, personas, metas medibles y tareas con prioridad, peso y evidencia; el Kanban permite moverlas entre **Por hacer**, **En proceso** y **Finalizada**. La información se guarda en `data/campania.db` y las versiones anteriores se migran sin borrar registros. Conserva ese archivo al actualizar el proyecto; en un servidor con disco efímero necesitarás un volumen persistente.
