@@ -82,11 +82,22 @@ class ExportarDiscurso(BaseModel):
 class MetaRequest(BaseModel):
     titulo: str = Field(min_length=1, max_length=180)
     descripcion: str = Field(default="", max_length=2000)
+    responsable_id: Optional[int] = None
+    area_id: Optional[int] = None
+    fecha_limite: Optional[str] = None
+    indicador: str = Field(default="", max_length=180)
+    objetivo: Optional[float] = None
+
+
+class AreaRequest(BaseModel):
+    nombre: str = Field(min_length=1, max_length=120)
+    descripcion: str = Field(default="", max_length=500)
 
 
 class PersonaRequest(BaseModel):
     nombre: str = Field(min_length=1, max_length=120)
     contacto: str = Field(default="", max_length=180)
+    area_id: Optional[int] = None
 
 
 class TareaRequest(BaseModel):
@@ -95,6 +106,9 @@ class TareaRequest(BaseModel):
     meta_id: Optional[int] = None
     persona_id: Optional[int] = None
     fecha_limite: Optional[str] = None
+    prioridad: str = Field(default="media", pattern="^(baja|media|alta|critica)$")
+    peso: int = Field(default=3, ge=1, le=8)
+    evidencia: str = Field(default="", max_length=1000)
 
 
 class EstadoTareaRequest(BaseModel):
@@ -249,7 +263,11 @@ def posicionamiento(solicitud: NoticiasRequest) -> dict[str, Any]:
     try:
         inicio = date.fromisoformat(solicitud.fecha_inicio)
         fin = date.fromisoformat(solicitud.fecha_fin)
-        return buscar(solicitud.nombre.strip(), inicio, fin, solicitud.paginas)
+        return buscar(
+            solicitud.nombre.strip(), inicio, fin, solicitud.paginas,
+            client=estado.client,
+            model_name=estado.config.modelo if estado.config else os.getenv('GROQ_MODEL', 'openai/gpt-oss-120b'),
+        )
     except (ValueError, requests.exceptions.HTTPError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except RuntimeError as exc:
@@ -360,12 +378,12 @@ def datos_campania():
 
 @app.post("/api/campania/{tabla}")
 def crear_campania(tabla: str, solicitud: dict[str, Any]):
-    modelos = {"metas": MetaRequest, "personas": PersonaRequest, "tareas": TareaRequest}
+    modelos = {"areas": AreaRequest, "metas": MetaRequest, "personas": PersonaRequest, "tareas": TareaRequest}
     if tabla not in modelos:
         raise HTTPException(status_code=404, detail="Sección inexistente.")
     try:
         datos = modelos[tabla](**solicitud).model_dump()
-        if tabla == "tareas" and datos["fecha_limite"]:
+        if tabla in ("metas", "tareas") and datos.get("fecha_limite"):
             from datetime import date
             date.fromisoformat(datos["fecha_limite"])
         return campania.crear(tabla, datos)
@@ -386,7 +404,7 @@ def mover_tarea(tarea_id: int, solicitud: EstadoTareaRequest):
 
 @app.delete("/api/campania/{tabla}/{item_id}")
 def borrar_campania(tabla: str, item_id: int):
-    if tabla not in ("metas", "personas", "tareas"):
+    if tabla not in ("areas", "metas", "personas", "tareas"):
         raise HTTPException(status_code=404, detail="Sección inexistente.")
     if not campania.eliminar(tabla, item_id):
         raise HTTPException(status_code=404, detail="Registro no encontrado.")
