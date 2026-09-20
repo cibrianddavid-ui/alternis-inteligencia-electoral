@@ -1,66 +1,123 @@
 # Plataforma de Inteligencia Electoral
 
-Aplicación web local con FastAPI y un frontend ligero. Incluye el Asistente electoral y un módulo interactivo de resultados gráficos; deja preparados los módulos de cartografía electoral y semáforo de posicionamiento.
+Aplicación web con FastAPI y un frontend ligero para consultar resultados electorales, ver el perfil de cualquier
+territorio, analizar la cobertura de prensa, redactar discursos con cifras verificadas y dar seguimiento a la campaña.
+
+## Módulos
+
+| Módulo | Qué hace | Quién lo usa |
+|---|---|---|
+| **Asistente electoral** | Preguntas en lenguaje natural; muestra cómo interpretó la consulta. El modelo interpreta, Python calcula. | Todos |
+| **Perfil territorial** | Ficha de un estado, municipio, distrito o sección: ganadores, margen, participación, secciones más competidas y metas ligadas. Enlaces directos (`#territorio/municipio/MATEHUALA`). | Todos |
+| **Resultados gráficos** | Compara partidos, elecciones y coaliciones; colores por partido. | Todos |
+| **Semáforo de posicionamiento** | Cobertura de prensa de una persona o comparación de dos: tono, cobertura por semana, filtros y reporte en PDF. | Coordinación y Administración |
+| **Discursos** | Formatos (mitin, debate, WhatsApp, boletín, guion), ajustes rápidos, datos de un territorio, **verificación de cifras**, historial persistente y exportación a Word, PDF y TXT. | Coordinación y Administración |
+| **Campaña y tareas** | Metas con avance medible y territorio, tareas, tablero ejecutivo y alertas. | Ver: todos · Editar: Coordinación y Administración |
+| **Administración** | Usuarios, roles y modo demostración. | Administración |
 
 ## Requisitos
 
 - Python 3.9 o superior
-- Una API key de Groq
-- Acceso de lectura a la hoja de Google configurada
+- Una API key de Groq (`GROQ_API_KEY`) para el asistente y los discursos
+- Una clave de SerpAPI (`SERPAPI_KEY`) para el semáforo
+- Acceso de lectura a la hoja de Google con los resultados
 
 ## Instalación
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate          # En Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env
+python verificar_instalacion.py    # comprueba que no falte ningún archivo
 ```
 
-En Windows, activa el entorno con:
+Crea un archivo `.env` en la raíz con tus claves (no lo subas a Git):
 
-```powershell
-.venv\Scripts\activate
+```
+GROQ_API_KEY=tu_clave
+SERPAPI_KEY=tu_clave
 ```
 
-Edita `.env` y coloca tu clave en `GROQ_API_KEY`.
-
-## Ejecución
+## Ejecución y primer acceso
 
 ```bash
 python run.py
 ```
 
-Abre `http://127.0.0.1:8000` en el navegador. La documentación de la API está disponible en `http://127.0.0.1:8000/docs`.
+Abre `http://127.0.0.1:8000`. La primera vez la plataforma pide **crear el primer administrador**; después esa
+persona crea a los demás usuarios desde la pestaña *Administración*.
+
+Para un servidor puedes evitar la pantalla de alta definiendo `ADMIN_USUARIO` y `ADMIN_CLAVE` en `.env`: se crea el
+primer administrador al arrancar, solo si todavía no existe ningún usuario.
+
+## Roles
+
+- **Consulta**: ve resultados, perfiles, gráficas y la campaña; usa el asistente.
+- **Coordinación**: además usa el semáforo, redacta discursos y edita la campaña.
+- **Administración**: además gestiona usuarios y los datos de demostración.
+
+Los permisos se aplican en el servidor; ocultar pestañas en pantalla es solo una comodidad.
+
+## Variables de entorno
+
+| Variable | Para qué sirve |
+|---|---|
+| `GROQ_API_KEY`, `GROQ_MODEL` | Modelo de lenguaje (asistente y discursos). |
+| `SERPAPI_KEY` | Búsqueda de noticias. |
+| `GOOGLE_SHEET_ID`, `GOOGLE_SHEET_GID` | Hoja de Google con los resultados. |
+| `ADMIN_USUARIO`, `ADMIN_CLAVE` | Crean el primer administrador al arrancar (opcional). |
+| `COOKIE_SECURE=1` | Marca la cookie de sesión como «solo HTTPS». **Actívala en producción.** |
+| `ENABLE_DOCS=1` | Publica la documentación interactiva de la API en `/docs`. Desactivada por defecto. |
+
+## Verificación de cifras en los discursos
+
+Cuando eliges un territorio, el sistema calcula una ficha de datos (votos, porcentajes, margen, participación) y se
+la entrega al modelo como única fuente de cifras. Después revisa cada cifra del borrador: las que coinciden con la
+ficha o con lo que tú escribiste se marcan como respaldadas; las demás se resaltan para que las confirmes. Solo se
+revisan cifras que parecen datos (porcentajes, decimales, cantidades de 100 o más); no se revisan años ni números
+pequeños. La revisión no verifica hechos ni afirmaciones, solo cifras: **todo texto debe revisarlo una persona**.
+Las exportaciones incluyen la nota de verificación, calculada en el servidor.
+
+## Datos y su calidad
+
+- La base se descarga de la hoja de Google al iniciar y se guarda en `data/electoral.db`.
+- El partido «NA» (Nueva Alianza) se lee como texto y no como valor vacío.
+- El perfil territorial avisa cuando la suma de las opciones no coincide con el total calculado de la base y marca
+  los empates exactos. Vale la pena revisar esos casos contra la fuente.
+- Porcentaje = votos / `TOTAL_VOTOS_CALCULADOS`; participación = votos emitidos / lista nominal.
+
+## Datos que se guardan (carpeta `data/`)
+
+| Archivo | Contenido |
+|---|---|
+| `electoral.db` | Resultados electorales (se regenera al iniciar). |
+| `campania.db` | Áreas, personas, metas y tareas. **Contiene datos personales.** |
+| `plataforma.db` | Usuarios (contraseñas con hash scrypt), sesiones e historial de discursos. |
+
+Respalda `data/` (excepto `electoral.db`, que se regenera). En un servidor con disco efímero necesitas un volumen
+persistente. No subas `data/` ni `.env` a Git.
+
+## Seguridad: qué incluye y qué falta
+
+Incluye: contraseñas con scrypt y sal; sesiones con token aleatorio guardado solo como huella; cookie `HttpOnly` y
+`SameSite=Lax`; bloqueo temporal tras 8 intentos fallidos; verificación de origen en peticiones que modifican datos;
+sesiones del asistente y conversaciones de discursos aisladas por persona; cabeceras básicas.
+
+Pendiente antes de exponerla en internet: HTTPS (con `COOKIE_SECURE=1`), política de contenido (CSP), registro de
+actividad (bitácora), respaldo automático y revisión legal del manejo de datos personales.
 
 ## Estructura
 
-- `backend/main.py`: API, sesiones y entrega del frontend.
-- `backend/asistente_electoral.py`: interpretación, consultas y métricas.
-- `backend/resultados_graficos.py`: filtros, agregaciones, porcentajes, variaciones y coaliciones.
-- `frontend/`: interfaz de la aplicación.
-- `data/`: base SQLite generada localmente.
-
-La base se actualiza desde Google Sheets al iniciar la aplicación. El módulo gráfico permite comparar años, tipos de elección y fuerzas políticas, además de descargar la gráfica y sus datos. No publiques el archivo `.env` ni tu API key.
-
-## Noticias y fichas territoriales
-
-En `requirements.txt` se escriben **nombres de paquetes**, no los comandos `pip install` ni `python -m`.
-Tras `pip install -r requirements.txt`, instala una sola vez el modelo de español:
-
-```bash
-El modelo de español se instala automáticamente desde `requirements.txt`. Para instalarlo manualmente en desarrollo local: `python -m spacy download es_core_news_sm`.
+```
+backend/   main.py (API) · auth.py, basedatos.py · territorio.py · redaccion.py, historial.py, informes.py
+           asistente_electoral.py, resultados_graficos.py, posicionamiento.py · campania.py, demo.py
+frontend/  index.html · assets/ app.js, auth.js, territorio.js, discursos.js, admin.js, tour.js, styles.css
+data/      bases SQLite generadas localmente
 ```
 
-Si ya habías instalado los paquetes antes de esta corrección, ejecuta
-`python -m pip install -r requirements.txt` de nuevo para añadir
-`lxml_html_clean`. Comprueba que el intérprete activo sea el de `.venv`.
+## Limitaciones conocidas
 
-Edita `.env` y agrega `SERPAPI_KEY=tu_clave_real`. No compartas la clave ni subas `.env` a GitHub.
-`backend/posicionamiento.py` contiene la consulta de noticias y las expresiones. El filtro del buscador no garantiza la fecha editorial original; comprueba las fuentes antes de usar los resultados.
-
-## Discursos y campaña
-
-En **Discursos y posicionamientos**, escribe una petición libre para generar un discurso con la clave `GROQ_API_KEY` existente. Puedes pedir ajustes en el mismo chat. El último borrador se descarga como TXT o PDF y se puede copiar o compartir con la función de compartir del dispositivo. La conversación se mantiene mientras la página siga abierta.
-
-En **Campaña y tareas**, el tablero ejecutivo resume metas, tareas por estado, vencimientos y avance por persona y área. En la vista de planeación puedes crear áreas, personas, metas medibles y tareas con prioridad, peso y evidencia; el Kanban permite moverlas entre **Por hacer**, **En proceso** y **Finalizada**. La información se guarda en `data/campania.db` y las versiones anteriores se migran sin borrar registros. Conserva ese archivo al actualizar el proyecto; en un servidor con disco efímero necesitarás un volumen persistente.
+- Cada instalación es una sola campaña; no hay separación entre varias campañas.
+- Los datos electorales disponibles son de un solo año (2024); las funciones de tendencia esperan más años.
+- En pantallas de celular no se muestra el bloque de usuario (cerrar sesión, contraseña y recorrido).
+- El límite de intentos de acceso vive en memoria: con varios procesos de servidor no se comparte.

@@ -6,9 +6,30 @@
     <meta name="description" content="Consulta y analiza resultados electorales de San Luis Potosí." />
     <title>Inteligencia Electoral SLP</title>
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
-    <link rel="stylesheet" href="/assets/styles.css?v=5" />
+    <link rel="stylesheet" href="/assets/styles.css?v=7" />
   </head>
-  <body>
+  <body class="locked">
+    <div id="auth-screen" class="auth-screen" hidden>
+      <div class="auth-card">
+        <div class="brand-mark" aria-hidden="true">IE</div>
+        <h1 id="auth-title">Inicia sesión</h1>
+        <p id="auth-sub" class="auth-sub"></p>
+        <form id="login-form" class="auth-form">
+          <label class="field"><span>Usuario</span><input id="login-user" autocomplete="username" required /></label>
+          <label class="field"><span>Contraseña</span><input id="login-pass" type="password" autocomplete="current-password" required /></label>
+          <button class="primary-button" type="submit">Entrar</button>
+        </form>
+        <form id="setup-form" class="auth-form" hidden>
+          <label class="field"><span>Tu nombre</span><input id="setup-name" autocomplete="name" maxlength="120" /></label>
+          <label class="field"><span>Usuario</span><input id="setup-user" autocomplete="username" required minlength="3" maxlength="60" /></label>
+          <label class="field"><span>Contraseña (mínimo 8 caracteres)</span><input id="setup-pass" type="password" autocomplete="new-password" required minlength="8" /></label>
+          <label class="field"><span>Repite la contraseña</span><input id="setup-pass2" type="password" autocomplete="new-password" required minlength="8" /></label>
+          <button class="primary-button" type="submit">Crear administrador</button>
+        </form>
+        <p id="auth-error" class="auth-error" role="alert"></p>
+      </div>
+    </div>
+    <div id="demo-banner" class="demo-banner" hidden></div>
     <div class="app-shell">
       <aside class="sidebar" aria-label="Navegación principal">
         <div class="brand">
@@ -23,22 +44,38 @@
           <button class="tab active" role="tab" aria-selected="true" data-tab="asistente">
             <span class="tab-icon">✦</span><span>Asistente electoral</span>
           </button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="territorio">
+            <span class="tab-icon">⌖</span><span>Perfil territorial</span>
+          </button>
           <button class="tab" role="tab" aria-selected="false" data-tab="graficos">
             <span class="tab-icon">▥</span><span>Resultados gráficos</span>
           </button>
           <button class="tab" role="tab" aria-selected="false" data-tab="cartografia">
             <span class="tab-icon">◇</span><span>Cartografía electoral</span>
           </button>
-          <button class="tab" role="tab" aria-selected="false" data-tab="semaforo">
+          <button class="tab" role="tab" aria-selected="false" data-tab="semaforo" data-min-role="coordinador">
             <span class="tab-icon">◉</span><span>Semáforo de posicionamiento electoral</span>
           </button>
-          <button class="tab" role="tab" aria-selected="false" data-tab="discursos">
+          <button class="tab" role="tab" aria-selected="false" data-tab="discursos" data-min-role="coordinador">
             <span class="tab-icon">▤</span><span>Discursos y posicionamientos</span>
           </button>
           <button class="tab" role="tab" aria-selected="false" data-tab="campania">
             <span class="tab-icon">☷</span><span>Campaña y tareas</span>
           </button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="admin" data-min-role="admin">
+            <span class="tab-icon">⚙</span><span>Administración</span>
+          </button>
         </nav>
+
+        <div class="user-box" id="user-box" hidden>
+          <div class="user-avatar" id="user-avatar" aria-hidden="true"></div>
+          <div class="user-info"><strong id="user-name"></strong><span id="user-role"></span></div>
+          <div class="user-actions">
+            <button id="tour-start" class="user-link" type="button" title="Recorrido guiado"><span aria-hidden="true">?</span><span>Recorrido</span></button>
+            <button id="password-open" class="user-link" type="button" title="Cambiar contraseña"><span aria-hidden="true">✎</span><span>Contraseña</span></button>
+            <button id="logout-button" class="user-link" type="button" title="Cerrar sesión"><span aria-hidden="true">⏻</span><span>Salir</span></button>
+          </div>
+        </div>
 
         <div class="sidebar-status">
           <span class="status-dot" id="status-dot"></span>
@@ -98,6 +135,19 @@
               </div>
             </aside>
           </div>
+        </section>
+
+        <section id="territorio" class="panel" role="tabpanel">
+          <header class="topbar"><div><p class="eyebrow">RESULTADOS POR TERRITORIO</p><h1>Perfil territorial</h1></div></header>
+          <p class="campaign-intro">Elige un estado, municipio, distrito o sección y reúne en una ficha los ganadores, el margen, la participación y lo que ya se planeó ahí. Desde la ficha puedes crear metas y redactar discursos con esos datos.</p>
+          <form id="territory-form" class="territory-picker">
+            <label class="field"><span>Nivel</span><select id="territory-level"></select></label>
+            <label class="field grow"><span>Unidad</span><input id="territory-unit" list="territory-units" autocomplete="off" placeholder="Escribe para buscar…" required /><datalist id="territory-units"></datalist></label>
+            <label class="field" id="territory-year-field"><span>Año</span><select id="territory-year"></select></label>
+            <button class="primary-button" type="submit">Ver perfil</button>
+          </form>
+          <p id="territory-status" class="composer-hint" role="status"></p>
+          <div id="territory-result"></div>
         </section>
 
         <section id="graficos" class="panel" role="tabpanel">
@@ -221,33 +271,60 @@
           <header class="topbar"><div><p class="eyebrow">COBERTURA EN MEDIOS</p><h1>Semáforo de posicionamiento electoral</h1></div></header>
           <div class="feature-card">
             <p>Busca noticias por nombre y periodo. Obtendrás un resumen de lo publicado, los temas con los que se asocia a la persona y una lectura de lo que representa esa cobertura. No equivale a una encuesta ni confirma las afirmaciones de las notas.</p>
-            <form id="news-form" class="feature-form">
+            <form id="news-form" class="feature-form news-form">
               <label class="field"><span>Nombre completo</span><input id="news-name" required minlength="3" placeholder="Nombre y apellidos" /></label>
+              <label class="field"><span>Comparar con (opcional)</span><input id="news-name-2" minlength="3" placeholder="Segundo nombre" /></label>
               <label class="field"><span>Desde</span><input id="news-from" type="date" required /></label>
               <label class="field"><span>Hasta</span><input id="news-to" type="date" required /></label>
               <button class="primary-button" type="submit">Buscar notas</button>
             </form>
+            <p class="field-hint">Si escribes un segundo nombre, verás a ambas personas lado a lado. Cada comparación consulta el buscador dos veces.</p>
             <p id="news-status" role="status"></p>
+            <div id="news-toolbar" class="news-toolbar" hidden>
+              <button id="news-export" class="secondary-button" type="button">Exportar reporte en PDF</button>
+            </div>
             <div id="news-results"></div>
           </div>
         </section>
 
         <section id="discursos" class="panel" role="tabpanel">
-          <header class="topbar"><div><p class="eyebrow">REDACCIÓN RÁPIDA</p><h1>Discursos y posicionamientos</h1></div><button id="speech-clear" class="secondary-button" type="button">Nuevo discurso</button></header>
-          <div class="speech-chat-card">
-            <div id="speech-messages" class="speech-messages" aria-live="polite">
-              <div class="speech-message assistant">Cuéntame para qué ocasión necesitas el discurso, su tema y duración. Puedo preparar un borrador y ajustarlo contigo.</div>
-            </div>
-            <form id="speech-form" class="speech-composer">
-              <textarea id="speech-prompt" rows="3" required placeholder="Ej.: Redacta un discurso de un minuto para la presentación pública de mi candidatura, con tono cercano..."></textarea>
-              <button class="primary-button" type="submit">Enviar</button>
-            </form>
-            <p id="speech-status" class="composer-hint" role="status">Para generar discursos configura GROQ_API_KEY en .env.</p>
-            <div class="download-buttons speech-actions">
-              <button class="secondary-button" type="button" data-speech-action="txt" disabled>Descargar TXT</button>
-              <button class="secondary-button" type="button" data-speech-action="pdf" disabled>Descargar PDF</button>
-              <button class="secondary-button" type="button" data-speech-action="copy" disabled>Copiar texto</button>
-              <button class="secondary-button" type="button" data-speech-action="share" disabled>Compartir</button>
+          <header class="topbar"><div><p class="eyebrow">REDACCIÓN ASISTIDA</p><h1>Discursos y posicionamientos</h1></div><button id="speech-clear" class="secondary-button" type="button">Nuevo discurso</button></header>
+          <div class="speech-layout">
+            <aside class="speech-history" aria-label="Historial de discursos">
+              <h2>Historial</h2>
+              <ul id="speech-history-list"></ul>
+            </aside>
+            <div class="speech-main">
+              <div class="speech-options">
+                <label class="field"><span>Formato</span><select id="speech-format"></select></label>
+                <div class="speech-territory">
+                  <label class="check-inline"><input type="checkbox" id="speech-use-data" /> Usar datos de un territorio</label>
+                  <div id="speech-territory-fields" class="speech-territory-fields" hidden>
+                    <select id="speech-level" aria-label="Nivel"></select>
+                    <input id="speech-unit" list="speech-units" aria-label="Unidad" autocomplete="off" placeholder="Unidad (ej. 8, MATEHUALA)" />
+                    <datalist id="speech-units"></datalist>
+                    <select id="speech-election" aria-label="Elección"></select>
+                  </div>
+                </div>
+              </div>
+              <div class="speech-chat-card">
+                <div id="speech-messages" class="speech-messages" aria-live="polite"></div>
+                <div id="speech-quick" class="speech-quick" hidden aria-label="Ajustes rápidos"></div>
+                <form id="speech-form" class="speech-composer">
+                  <textarea id="speech-prompt" rows="3" required placeholder="Ej.: Redacta un discurso para la presentación pública de mi candidatura, con tono cercano..."></textarea>
+                  <button class="primary-button" type="submit">Enviar</button>
+                </form>
+                <p id="speech-status" class="composer-hint" role="status"></p>
+                <div id="speech-verify" class="speech-verify" hidden></div>
+                <div class="download-buttons speech-actions">
+                  <button class="secondary-button" type="button" data-speech-action="docx" disabled>Word</button>
+                  <button class="secondary-button" type="button" data-speech-action="pdf" disabled>PDF</button>
+                  <button class="secondary-button" type="button" data-speech-action="txt" disabled>TXT</button>
+                  <button class="secondary-button" type="button" data-speech-action="copy" disabled>Copiar</button>
+                  <button class="secondary-button" type="button" data-speech-action="share" disabled>Compartir</button>
+                  <span id="speech-meta" class="speech-meta"></span>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -259,18 +336,54 @@
           <p id="campaign-status" role="status"></p>
           <div id="campaign-dashboard" class="campaign-view"><div id="campaign-kpis" class="campaign-kpis"></div><div class="dashboard-grid"><section class="dashboard-card"><h2>Avance por meta</h2><div id="goal-progress"></div></section><section class="dashboard-card"><h2>Trabajo por persona</h2><div id="person-performance"></div></section><section class="dashboard-card wide"><h2>Avance por área</h2><div id="area-performance"></div></section><section class="dashboard-card wide"><h2>Alertas de campaña</h2><div id="campaign-alerts"></div></section></div></div>
           <div id="campaign-work" class="campaign-view" hidden>
-          <div class="campaign-setup">
+          <div class="campaign-setup" data-min-role="coordinador">
             <form id="area-form" class="campaign-form"><h2>Nueva área</h2><input name="nombre" required maxlength="120" placeholder="Ej.: Operación territorial" /><input name="descripcion" maxlength="500" placeholder="Descripción (opcional)" /><button class="primary-button">Añadir área</button><div id="area-list" class="chip-list"></div></form>
             <form id="person-form" class="campaign-form"><h2>Nueva persona</h2><input name="nombre" required maxlength="120" placeholder="Nombre" /><input name="contacto" maxlength="180" placeholder="Contacto (opcional)" /><select name="area_id" id="person-area"><option value="">Sin área</option></select><button class="primary-button">Añadir persona</button><div id="person-list" class="chip-list"></div></form>
-            <form id="goal-form" class="campaign-form campaign-form-wide"><h2>Nueva meta</h2><input name="titulo" required maxlength="180" placeholder="Ej.: Cubrir las secciones prioritarias" /><input name="descripcion" maxlength="2000" placeholder="Descripción (opcional)" /><select name="responsable_id" id="goal-person"><option value="">Sin responsable</option></select><select name="area_id" id="goal-area"><option value="">Sin área</option></select><input name="fecha_limite" type="date" /><input name="indicador" maxlength="180" placeholder="Indicador: secciones cubiertas" /><input name="objetivo" type="number" min="0" step="any" placeholder="Objetivo: 20" /><button class="primary-button">Añadir meta</button><div id="goal-list" class="chip-list"></div></form>
+            <form id="goal-form" class="campaign-form campaign-form-wide"><h2>Nueva meta</h2><input name="titulo" required maxlength="180" placeholder="Ej.: Cubrir las secciones prioritarias" /><input name="descripcion" maxlength="2000" placeholder="Descripción (opcional)" /><select name="responsable_id" id="goal-person"><option value="">Sin responsable</option></select><select name="area_id" id="goal-area"><option value="">Sin área</option></select><input name="fecha_limite" type="date" /><input name="indicador" maxlength="180" placeholder="Indicador: secciones cubiertas" /><input name="objetivo" type="number" min="0" step="any" placeholder="Objetivo: 20" /><select name="territorio_tipo" id="goal-territory-type" aria-label="Tipo de territorio"><option value="">Sin territorio</option></select><input name="territorio_valor" id="goal-territory-value" list="goal-territory-units" autocomplete="off" placeholder="Territorio (ej. 8, MATEHUALA)" /><datalist id="goal-territory-units"></datalist><button class="primary-button">Añadir meta</button><div id="goal-list" class="chip-list"></div></form>
           </div>
-          <form id="task-form" class="campaign-form task-creator"><h2>Nueva tarea</h2><div class="task-fields"><input name="titulo" required maxlength="180" placeholder="Título de la tarea" /><select name="meta_id" id="task-goal"><option value="">Sin meta</option></select><select name="persona_id" id="task-person"><option value="">Sin responsable</option></select><input name="fecha_limite" type="date" /><select name="prioridad"><option value="baja">Prioridad baja</option><option value="media" selected>Prioridad media</option><option value="alta">Prioridad alta</option><option value="critica">Prioridad crítica</option></select><select name="peso"><option value="1">1 punto</option><option value="3" selected>3 puntos</option><option value="5">5 puntos</option><option value="8">8 puntos</option></select><input name="evidencia" maxlength="1000" placeholder="Evidencia o enlace (opcional)" /><textarea name="descripcion" maxlength="2000" rows="2" placeholder="Detalles (opcional)"></textarea><button class="primary-button">Crear tarea</button></div></form>
+          <section class="goal-section"><h2>Metas y avance</h2><div id="goal-cards" class="goal-cards"></div></section>
+          <form id="task-form" class="campaign-form task-creator" data-min-role="coordinador"><h2>Nueva tarea</h2><div class="task-fields"><input name="titulo" required maxlength="180" placeholder="Título de la tarea" /><select name="meta_id" id="task-goal"><option value="">Sin meta</option></select><select name="persona_id" id="task-person"><option value="">Sin responsable</option></select><input name="fecha_limite" type="date" /><select name="prioridad"><option value="baja">Prioridad baja</option><option value="media" selected>Prioridad media</option><option value="alta">Prioridad alta</option><option value="critica">Prioridad crítica</option></select><select name="peso"><option value="1">1 punto</option><option value="3" selected>3 puntos</option><option value="5">5 puntos</option><option value="8">8 puntos</option></select><input name="evidencia" maxlength="1000" placeholder="Evidencia o enlace (opcional)" /><textarea name="descripcion" maxlength="2000" rows="2" placeholder="Detalles (opcional)"></textarea><button class="primary-button">Crear tarea</button></div></form>
           <div id="task-board" class="task-board"></div>
           </div>
         </section>
+        <section id="admin" class="panel" role="tabpanel" data-min-role="admin">
+          <header class="topbar"><div><p class="eyebrow">ACCESO Y DATOS</p><h1>Administración</h1></div></header>
+          <div class="admin-grid">
+            <section class="dashboard-card wide"><h2>Usuarios</h2>
+              <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Último acceso</th><th>Estado</th><th></th></tr></thead><tbody id="user-rows"></tbody></table></div>
+              <p class="composer-hint">Consulta: ve resultados, perfiles y campaña. Coordinación: además usa el semáforo, redacta discursos y edita la campaña. Administración: además gestiona usuarios.</p>
+            </section>
+            <form id="user-form" class="campaign-form"><h2>Nuevo usuario</h2>
+              <input name="usuario" required minlength="3" maxlength="60" placeholder="Usuario" autocomplete="off" />
+              <input name="nombre" maxlength="120" placeholder="Nombre" />
+              <input name="clave" type="password" required minlength="8" placeholder="Contraseña inicial (mínimo 8)" autocomplete="new-password" />
+              <select name="rol"><option value="consulta">Consulta</option><option value="coordinador" selected>Coordinación</option><option value="admin">Administración</option></select>
+              <button class="primary-button" type="submit">Crear usuario</button>
+            </form>
+            <section class="dashboard-card"><h2>Modo demostración</h2>
+              <p id="demo-text" class="composer-hint"></p>
+              <div class="demo-actions"><button id="demo-load" class="secondary-button" type="button">Cargar datos de ejemplo</button><button id="demo-remove" class="secondary-button" type="button">Quitar datos de ejemplo</button></div>
+            </section>
+          </div>
+          <p id="admin-status" class="composer-hint" role="status"></p>
+        </section>
       </main>
     </div>
+    <div id="password-modal" class="modal" hidden>
+      <form id="password-form" class="modal-card">
+        <h2>Cambiar contraseña</h2>
+        <label class="field"><span>Contraseña actual</span><input id="pass-current" type="password" autocomplete="current-password" required /></label>
+        <label class="field"><span>Nueva contraseña (mínimo 8)</span><input id="pass-new" type="password" autocomplete="new-password" required minlength="8" /></label>
+        <p id="password-error" class="auth-error" role="alert"></p>
+        <div class="modal-actions"><button type="button" id="password-cancel" class="secondary-button">Cancelar</button><button type="submit" class="primary-button">Guardar</button></div>
+      </form>
+    </div>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-    <script src="/assets/app.js?v=6" defer></script>
+    <script src="/assets/auth.js?v=1" defer></script>
+    <script src="/assets/app.js?v=8" defer></script>
+    <script src="/assets/territorio.js?v=1" defer></script>
+    <script src="/assets/discursos.js?v=1" defer></script>
+    <script src="/assets/admin.js?v=1" defer></script>
+    <script src="/assets/tour.js?v=1" defer></script>
   </body>
 </html>
