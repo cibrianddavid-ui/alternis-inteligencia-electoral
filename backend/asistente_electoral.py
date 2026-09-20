@@ -110,7 +110,9 @@ def encontrar_columna(columnas: list[str], concepto: str) -> str | None:
 
 
 def cargar_datos(config: Config = CONFIG) -> tuple[pd.DataFrame, dict[str, str]]:
-    df = pd.read_csv(config.url_csv)
+    # keep_default_na=False: el partido "NA" (Nueva Alianza) no debe leerse como valor
+    # faltante. Solo las celdas realmente vacías se consideran nulas.
+    df = pd.read_csv(config.url_csv, keep_default_na=False, na_values=[""])
     df.columns = columnas_unicas(df.columns)
 
     mapa = {

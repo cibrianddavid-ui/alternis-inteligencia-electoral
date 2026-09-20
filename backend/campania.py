@@ -6,6 +6,7 @@ from pathlib import Path
 DB = Path(__file__).resolve().parents[1] / "data" / "campania.db"
 ESTADOS = {"por_hacer", "en_proceso", "finalizada"}
 PRIORIDADES = {"baja", "media", "alta", "critica"}
+TERRITORIOS = {"entidad", "municipio", "id_distrito_local", "id_distrito_federal", "seccion"}
 
 
 def conectar():
@@ -46,15 +47,21 @@ def iniciar():
         """)
         # Migracion no destructiva para bases creadas con versiones anteriores.
         migraciones = {
-            "personas": {"area_id": "INTEGER REFERENCES areas(id) ON DELETE SET NULL"},
+            "areas": {"demo": "INTEGER NOT NULL DEFAULT 0"},
+            "personas": {"area_id": "INTEGER REFERENCES areas(id) ON DELETE SET NULL",
+                         "demo": "INTEGER NOT NULL DEFAULT 0"},
             "metas": {
                 "responsable_id": "INTEGER REFERENCES personas(id) ON DELETE SET NULL",
                 "area_id": "INTEGER REFERENCES areas(id) ON DELETE SET NULL",
-                "fecha_limite": "TEXT", "indicador": "TEXT NOT NULL DEFAULT ''", "objetivo": "REAL"
+                "fecha_limite": "TEXT", "indicador": "TEXT NOT NULL DEFAULT ''", "objetivo": "REAL",
+                # Territorio al que se refiere la meta (nivel + valor) y avance acumulado del indicador.
+                "territorio_tipo": "TEXT", "territorio_valor": "TEXT",
+                "avance": "REAL NOT NULL DEFAULT 0", "demo": "INTEGER NOT NULL DEFAULT 0"
             },
             "tareas": {
                 "prioridad": "TEXT NOT NULL DEFAULT 'media'", "peso": "INTEGER NOT NULL DEFAULT 3",
-                "fecha_finalizacion": "TEXT", "evidencia": "TEXT NOT NULL DEFAULT ''"
+                "fecha_finalizacion": "TEXT", "evidencia": "TEXT NOT NULL DEFAULT ''",
+                "demo": "INTEGER NOT NULL DEFAULT 0"
             }
         }
         for tabla, columnas in migraciones.items():
@@ -73,7 +80,8 @@ def listar():
 def crear(tabla, datos):
     campos = {
         "areas": ("nombre", "descripcion"),
-        "metas": ("titulo", "descripcion", "responsable_id", "area_id", "fecha_limite", "indicador", "objetivo"),
+        "metas": ("titulo", "descripcion", "responsable_id", "area_id", "fecha_limite", "indicador", "objetivo",
+                  "territorio_tipo", "territorio_valor", "avance"),
         "personas": ("nombre", "contacto", "area_id"),
         "tareas": ("titulo", "descripcion", "meta_id", "persona_id", "fecha_limite", "prioridad", "peso", "evidencia")
     }[tabla]
@@ -99,3 +107,33 @@ def eliminar(tabla, item_id):
         raise ValueError("Sección inválida.")
     with conectar() as db:
         return bool(db.execute(f"DELETE FROM {tabla} WHERE id=?", (item_id,)).rowcount)
+
+
+CAMPOS_EDITABLES_META = ("titulo", "descripcion", "responsable_id", "area_id", "fecha_limite", "indicador",
+                         "objetivo", "territorio_tipo", "territorio_valor", "avance")
+
+
+def actualizar_meta(meta_id, datos):
+    """Actualiza solo los campos enviados; devuelve la meta o None si no existe."""
+    cambios = {k: v for k, v in datos.items() if k in CAMPOS_EDITABLES_META}
+    with conectar() as db:
+        if cambios:
+            db.execute(f"UPDATE metas SET {', '.join(f'{k}=?' for k in cambios)} WHERE id=?",
+                       [*cambios.values(), meta_id])
+        fila = db.execute("SELECT * FROM metas WHERE id=?", (meta_id,)).fetchone()
+        return dict(fila) if fila else None
+
+
+def hay_demo():
+    with conectar() as db:
+        return any(db.execute(f"SELECT 1 FROM {t} WHERE demo=1 LIMIT 1").fetchone() for t in
+                   ("areas", "personas", "metas", "tareas"))
+
+
+def quitar_demo():
+    """Borra únicamente lo marcado como demostración; los datos reales no se tocan."""
+    with conectar() as db:
+        total = 0
+        for tabla in ("tareas", "metas", "personas", "areas"):
+            total += db.execute(f"DELETE FROM {tabla} WHERE demo=1").rowcount
+        return total

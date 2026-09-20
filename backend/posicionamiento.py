@@ -4,8 +4,10 @@ from __future__ import annotations
 import os
 import json
 import re
+import threading
+import unicodedata
 from collections import Counter, defaultdict
-from datetime import date
+from datetime import date, timedelta
 from typing import Optional
 from urllib.parse import urlparse
 
@@ -17,6 +19,10 @@ STOP = set('de del la las el los a al en con por para y o un una unos unas que s
 HTTP = requests.Session()
 HTTP.headers.update({'User-Agent': 'Mozilla/5.0 (compatible; ElectoralResearch/1.0)'})
 _nlp = None
+# Dos búsquedas pueden correr a la vez (comparación de personas). Se protege la
+# carga perezosa del modelo y su uso, porque spaCy no garantiza seguridad entre hilos.
+_NLP_CARGA = threading.Lock()
+_NLP_USO = threading.Lock()
 
 POSITIVAS = set('apoya apoyo avance avances celebra celebró cumple cumplió crecimiento logro logros mejora mejoró positivo positiva reconocimiento reconocen éxito exitoso fortalece inversión acuerdo acuerdos beneficio beneficios'.split())
 NEGATIVAS = set('acusa acusado acusación critica crítico crítica cuestiona cuestionó denuncia denunciado polémica conflicto crisis falla fallas incumple incumplimiento corrupción delito investigación protesta rechazo riesgo sanción violencia'.split())
@@ -25,13 +31,16 @@ NEGATIVAS = set('acusa acusado acusación critica crítico crítica cuestiona cu
 def modelo():
     global _nlp
     if _nlp is None:
-        try:
-            _nlp = spacy.load('es_core_news_sm')
-        except OSError:
-            # Respaldo para despliegues donde el wheel del modelo no pudo
-            # descargarse. Permite leer oraciones y generar el reporte básico.
-            _nlp = spacy.blank('es')
-            _nlp.add_pipe('sentencizer')
+        with _NLP_CARGA:
+            if _nlp is None:
+                try:
+                    _nlp = spacy.load('es_core_news_sm')
+                except OSError:
+                    # Respaldo para despliegues donde el wheel del modelo no pudo
+                    # descargarse. Permite leer oraciones y generar el reporte básico.
+                    blanco = spacy.blank('es')
+                    blanco.add_pipe('sentencizer')
+                    _nlp = blanco
     return _nlp
 
 
@@ -39,6 +48,120 @@ def fechas(inicio: date, fin: date) -> str:
     if fin < inicio:
         raise ValueError('La fecha final debe ser igual o posterior a la inicial.')
     return f'cdr:1,cd_min:{inicio:%m/%d/%Y},cd_max:{fin:%m/%d/%Y}'
+
+
+# ---------------------------------------------------------------------------
+# Fechas de publicación y cobertura por semana
+# ---------------------------------------------------------------------------
+
+_MESES = {'ene': 1, 'jan': 1, 'feb': 2, 'mar': 3, 'abr': 4, 'apr': 4, 'may': 5, 'jun': 6,
+          'jul': 7, 'ago': 8, 'aug': 8, 'sep': 9, 'set': 9, 'oct': 10, 'nov': 11,
+          'dic': 12, 'dec': 12}
+_DIAS_POR_UNIDAD = {'minuto': 0, 'min': 0, 'hora': 0, 'hour': 0, 'minute': 0, 'dia': 1, 'day': 1,
+                    'semana': 7, 'week': 7, 'mes': 30, 'month': 30, 'ano': 365, 'year': 365}
+
+
+def _sin_acentos(texto: str) -> str:
+    base = unicodedata.normalize('NFKD', texto or '')
+    return ''.join(c for c in base if not unicodedata.combining(c)).lower().strip()
+
+
+def _fecha_buscador(texto: str, hoy: Optional[date] = None) -> Optional[date]:
+    """Interpreta la fecha que devuelve el buscador.
+
+    Acepta formatos relativos ("hace 3 días", "2 weeks ago") y absolutos
+    ("12 sept 2024", "Sep 12, 2024", "12/09/2024", "2024-09-12"). Si no puede
+    interpretarla con certeza devuelve None en lugar de adivinar.
+    """
+    hoy = hoy or date.today()
+    t = _sin_acentos(texto)
+    if not t:
+        return None
+    try:
+        if t in {'ayer', 'yesterday'}:
+            return hoy - timedelta(days=1)
+        if t in {'hoy', 'today'}:
+            return hoy
+        if 'hace' in t or t.endswith(' ago'):
+            m = re.search(r'(\d+)\s*(minuto|min|hora|hour|dia|day|semana|week|mes|month|ano|year)', t)
+            if m:
+                return hoy - timedelta(days=int(m.group(1)) * _DIAS_POR_UNIDAD[m.group(2)])
+            return None
+        m = re.search(r'(\d{4})-(\d{2})-(\d{2})', t)
+        if m:
+            return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        m = re.search(r'(\d{1,2})/(\d{1,2})/(\d{4})', t)
+        if m:  # formato día/mes/año, habitual en México
+            return date(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+        m = re.search(r'(\d{1,2})\s*(?:de\s+)?([a-z]{3,})\.?,?\s*(?:de\s+)?(\d{4})', t)
+        if m and m.group(2)[:3] in _MESES:
+            return date(int(m.group(3)), _MESES[m.group(2)[:3]], int(m.group(1)))
+        m = re.search(r'([a-z]{3,})\.?\s+(\d{1,2}),?\s+(\d{4})', t)
+        if m and m.group(1)[:3] in _MESES:
+            return date(int(m.group(3)), _MESES[m.group(1)[:3]], int(m.group(2)))
+        m = re.search(r'^(\d{1,2})\s*(?:de\s+)?([a-z]{3,})\.?$', t)  # sin año: se asume el actual
+        if m and m.group(2)[:3] in _MESES:
+            candidata = date(hoy.year, _MESES[m.group(2)[:3]], int(m.group(1)))
+            return candidata if candidata <= hoy else date(hoy.year - 1, candidata.month, candidata.day)
+    except (ValueError, KeyError):
+        return None
+    return None
+
+
+def _fecha_pagina(html: str) -> Optional[date]:
+    """Fecha editorial declarada en los metadatos de la propia página."""
+    try:
+        meta = trafilatura.extract_metadata(html)
+        crudo = str(getattr(meta, 'date', '') or '')[:10]
+        return date.fromisoformat(crudo) if crudo else None
+    except Exception:
+        return None
+
+
+def _elegir_fecha(fecha_pagina: Optional[date], fecha_busc: Optional[date],
+                  inicio: date, fin: date) -> tuple[Optional[date], Optional[str]]:
+    """Prefiere la fecha de la página; solo se acepta si cae dentro del periodo.
+
+    Una fecha fuera del periodo suele indicar una nota actualizada o un dato mal
+    leído, así que se prueba con la del buscador y, si tampoco encaja, se deja
+    la nota sin fecha en lugar de forzarla a una semana.
+    """
+    for valor, origen in ((fecha_pagina, 'pagina'), (fecha_busc, 'buscador')):
+        if valor is not None and inicio <= valor <= fin:
+            return valor, origen
+    return None, None
+
+
+def _lunes(dia: date) -> date:
+    return dia - timedelta(days=dia.weekday())
+
+
+def _cobertura_semanal(noticias: list[dict], inicio: date, fin: date) -> dict:
+    """Notas por semana (lunes a domingo) y tono; rellena con ceros las semanas vacías."""
+    vacio = {'negativo': 0, 'neutro': 0, 'positivo': 0}
+    conteos: dict[date, dict[str, int]] = defaultdict(lambda: dict(vacio))
+    sin_fecha = 0
+    for noticia in noticias:
+        crudo = noticia.get('fecha')
+        if not crudo:
+            noticia['semana'] = None
+            sin_fecha += 1
+            continue
+        semana = _lunes(date.fromisoformat(crudo))
+        noticia['semana'] = semana.isoformat()
+        conteos[semana][noticia.get('tono', 'neutro')] += 1
+
+    primera, ultima = _lunes(inicio), _lunes(fin)
+    if (ultima - primera).days // 7 > 520:  # rango absurdamente largo: solo semanas con datos
+        claves = sorted(conteos)
+    else:
+        claves = [primera + timedelta(days=7 * i) for i in range((ultima - primera).days // 7 + 1)]
+    semanas = []
+    for lunes in claves:
+        c = conteos.get(lunes, vacio)
+        semanas.append({'semana': lunes.isoformat(), 'total': sum(c.values()), **c})
+    return {'semanas': semanas, 'sin_fecha': sin_fecha, 'con_fecha': len(noticias) - sin_fecha}
+
 
 
 def _analisis_basico(nombre: str, noticias: list[dict], asociaciones: list[dict]) -> dict:
@@ -247,19 +370,24 @@ def buscar(nombre: str, inicio: date, fin: date, paginas: int = 2, client=None,
             titulo = item.get('title') or ''
             resumen = item.get('snippet') or ''
             texto = ''
+            fecha_pagina = None
             try:
                 pagina_web = HTTP.get(url, timeout=12)
                 pagina_web.raise_for_status()
                 if 'html' in pagina_web.headers.get('Content-Type', '').lower():
                     texto = trafilatura.extract(pagina_web.text, favor_precision=True, include_comments=False) or ''
+                    fecha_pagina = _fecha_pagina(pagina_web.text)
             except (requests.RequestException, ValueError):
                 pass
             material = ' '.join([titulo, resumen, texto])
             if not re.search(re.escape(nombre), material, re.I):
                 continue
+            fecha, origen_fecha = _elegir_fecha(
+                fecha_pagina, _fecha_buscador(str(item.get('date') or '')), inicio, fin)
             noticias.append({
                 'titulo': titulo, 'resumen': resumen, 'fuente': str(fuente),
                 'fecha_buscador': item.get('date') or '', 'url': url,
+                'fecha': fecha.isoformat() if fecha else None, 'fecha_origen': origen_fecha,
                 'texto_disponible': bool(texto), '_texto': material[:80000],
             })
         if len(resultados) < 10:
@@ -269,7 +397,8 @@ def buscar(nombre: str, inicio: date, fin: date, paginas: int = 2, client=None,
     palabras_por_noticia = defaultdict(set)
     nombre_tokens = {x.lower() for x in re.findall(r'\w+', nombre)}
     for indice, noticia in enumerate(noticias):
-        doc = nlp(noticia['_texto'])
+        with _NLP_USO:
+            doc = nlp(noticia['_texto'])
         # La nube no depende del parser: cuenta en cuántas notas aparece cada
         # palabra relevante, tanto si se cargó el modelo completo como si no.
         for token in doc:
@@ -310,7 +439,7 @@ def buscar(nombre: str, inicio: date, fin: date, paginas: int = 2, client=None,
     asociaciones = sorted(({
         'frase': x['frase'], 'noticias': len(x['noticias']),
         'fuentes': len(x['fuentes']), 'contexto': x['ejemplo'],
-        'enlaces': sorted(x['enlaces'])[:5],
+        'enlaces': sorted(x['enlaces'])[:5], 'notas_urls': sorted(x['enlaces']),
     } for x in grupos.values() if len(x['noticias']) >= 2),
         key=lambda x: (x['noticias'], x['fuentes']), reverse=True)[:20]
     # Completa la nube con palabras frecuentes aunque las frases nominales no
@@ -326,7 +455,8 @@ def buscar(nombre: str, inicio: date, fin: date, paginas: int = 2, client=None,
         asociaciones.append({'frase': palabra, 'noticias': len(indices),
                               'fuentes': len(fuentes),
                               'contexto': 'Palabra recurrente en el conjunto de notas consultadas.',
-                              'enlaces': enlaces})
+                              'enlaces': enlaces,
+                              'notas_urls': [noticias[i]['url'] for i in sorted(indices)]})
         existentes.add(palabra.casefold())
         if len(asociaciones) == 30:
             break
@@ -334,9 +464,10 @@ def buscar(nombre: str, inicio: date, fin: date, paginas: int = 2, client=None,
     semaforo = _clasificar_tonos(nombre, noticias, client, model_name)
     analisis = (_analisis_con_modelo(nombre, noticias, asociaciones, client, model_name)
                 or _analisis_basico(nombre, noticias, asociaciones))
+    cobertura = _cobertura_semanal(noticias, inicio, fin)
     for noticia in noticias:
         noticia.pop('_texto', None)
     return {'nombre': nombre, 'fecha_inicio': inicio.isoformat(), 'fecha_fin': fin.isoformat(),
             'noticias': noticias, 'asociaciones': asociaciones,
-            'analisis': analisis, 'semaforo': semaforo,
+            'analisis': analisis, 'semaforo': semaforo, 'cobertura_semanal': cobertura,
             'aviso': 'La fecha del buscador puede diferir de la publicación original. Una asociación textual no verifica una afirmación.'}

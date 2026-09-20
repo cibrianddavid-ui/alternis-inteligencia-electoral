@@ -1,7 +1,21 @@
+# Variables de entorno y credenciales
 .env
+.env.*
+!.env.example
+
+# Entornos virtuales
 .venv/
+venv/
+
+# Python
 __pycache__/
 *.py[cod]
-data/*.db
-.DS_Store
 
+# Bases locales
+data/*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# macOS
+.DS_Store
