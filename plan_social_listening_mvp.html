@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plan de Acción — Social Listening MVP | ALTERNIS</title>
+  <style>
+    :root {
+      --azul:        #1a3a5c;
+      --azul-medio:  #2563a8;
+      --azul-claro:  #e8f0fb;
+      --verde:       #1a6e4a;
+      --verde-claro: #e6f4ee;
+      --naranja:     #b45309;
+      --naranja-claro:#fef3c7;
+      --rojo:        #991b1b;
+      --rojo-claro:  #fee2e2;
+      --gris:        #374151;
+      --gris-claro:  #f3f4f6;
+      --borde:       #e5e7eb;
+      --blanco:      #ffffff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #f8fafc;
+      color: var(--gris);
+      line-height: 1.65;
+      font-size: 15px;
+    }
+
+    /* ── ENCABEZADO ─────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, var(--azul) 0%, #0f2744 100%);
+      color: white;
+      padding: 48px 64px 40px;
+    }
+    header .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    header h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 8px; }
+    header .sub { font-size: 1.1rem; opacity: 0.8; margin-bottom: 24px; }
+    header .meta { display: flex; gap: 32px; flex-wrap: wrap; }
+    header .meta span { font-size: 13px; opacity: 0.7; }
+    header .meta strong { color: #93c5fd; }
+
+    /* ── LAYOUT ─────────────────────────────────────────── */
+    .container { max-width: 1060px; margin: 0 auto; padding: 40px 32px 80px; }
+
+    /* ── SECCIONES ──────────────────────────────────────── */
+    .section { margin-bottom: 48px; }
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--azul);
+      border-left: 4px solid var(--azul-medio);
+      padding-left: 14px;
+      margin-bottom: 20px;
+    }
+    .section-subtitle {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--gris);
+      margin: 20px 0 10px;
+    }
+
+    /* ── TARJETAS ───────────────────────────────────────── */
+    .card {
+      background: white;
+      border: 1px solid var(--borde);
+      border-radius: 10px;
+      padding: 24px 28px;
+      margin-bottom: 16px;
+    }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    /* ── ALERTAS ───────────────────────────────────────── */
+    .alert {
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .alert-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 1px; }
+    .alert.info    { background: var(--azul-claro);    border-left: 4px solid var(--azul-medio); }
+    .alert.success { background: var(--verde-claro);   border-left: 4px solid var(--verde); }
+    .alert.warning { background: var(--naranja-claro); border-left: 4px solid var(--naranja); }
+    .alert.danger  { background: var(--rojo-claro);    border-left: 4px solid var(--rojo); }
+
+    /* ── FASES ─────────────────────────────────────────── */
+    .fase-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .fase {
+      border-radius: 10px;
+      padding: 20px;
+      border: 1px solid transparent;
+    }
+    .fase-1 { background: #eff6ff; border-color: #93c5fd; }
+    .fase-2 { background: #f0fdf4; border-color: #86efac; }
+    .fase-3 { background: #fff7ed; border-color: #fcd34d; }
+    .fase-4 { background: #fdf4ff; border-color: #d8b4fe; }
+    .fase-num {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      opacity: 0.7;
+    }
+    .fase-title { font-size: 1rem; font-weight: 700; margin-bottom: 4px; }
+    .fase-days  { font-size: 0.85rem; opacity: 0.7; margin-bottom: 12px; }
+    .fase ul { padding-left: 18px; font-size: 0.88rem; }
+    .fase ul li { margin-bottom: 4px; }
+
+    /* ── CÓDIGO ─────────────────────────────────────────── */
+    pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 20px 24px;
+      overflow-x: auto;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .code-block-title {
+      background: #1e293b;
+      color: #94a3b8;
+      font-size: 0.75rem;
+      padding: 6px 16px;
+      border-radius: 8px 8px 0 0;
+      font-family: monospace;
+      margin-bottom: -6px;
+    }
+    code {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: 0.85em;
+      color: #1e40af;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* ── TABLA ─────────────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th {
+      background: var(--azul);
+      color: white;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+    }
+    td { padding: 10px 14px; border-bottom: 1px solid var(--borde); }
+    tr:nth-child(even) td { background: var(--gris-claro); }
+    tr:hover td { background: var(--azul-claro); }
+
+    /* ── CHIPS ──────────────────────────────────────────── */
+    .chip {
+      display: inline-block;
+      border-radius: 20px;
+      padding: 3px 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      margin: 2px;
+    }
+    .chip-blue   { background: #dbeafe; color: #1d4ed8; }
+    .chip-green  { background: #dcfce7; color: #166534; }
+    .chip-orange { background: #fed7aa; color: #9a3412; }
+    .chip-purple { background: #ede9fe; color: #6d28d9; }
+    .chip-red    { background: #fee2e2; color: #991b1b; }
+
+    /* ── DIAGRAMA DE FLUJO SVG ──────────────────────────── */
+    .diagram-wrap {
+      background: white;
+      border: 1px solid var(--borde);
+      border-radius: 10px;
+      padding: 28px;
+      overflow-x: auto;
+    }
+
+    /* ── CHECKLIST ──────────────────────────────────────── */
+    .checklist { list-style: none; padding: 0; }
+    .checklist li {
+      padding: 8px 0 8px 32px;
+      position: relative;
+      border-bottom: 1px solid var(--borde);
+      font-size: 0.9rem;
+    }
+    .checklist li:last-child { border-bottom: none; }
+    .checklist li::before {
+      content: '☐';
+      position: absolute;
+      left: 4px;
+      color: var(--azul-medio);
+      font-size: 1rem;
+    }
+
+    /* ── SCOPE IN/OUT ───────────────────────────────────── */
+    .scope-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .scope-in, .scope-out {
+      border-radius: 8px;
+      padding: 18px 20px;
+    }
+    .scope-in  { background: var(--verde-claro);   border: 1px solid #86efac; }
+    .scope-out { background: var(--naranja-claro);  border: 1px solid #fcd34d; }
+    .scope-in h4  { color: var(--verde);   margin-bottom: 10px; }
+    .scope-out h4 { color: var(--naranja); margin-bottom: 10px; }
+    .scope-in ul, .scope-out ul { padding-left: 18px; font-size: 0.88rem; }
+    .scope-in ul li, .scope-out ul li { margin-bottom: 5px; }
+
+    /* ── STACK ITEM ─────────────────────────────────────── */
+    .stack-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--gris-claro);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .stack-item .icon { font-size: 1.4rem; }
+    .stack-item .name { font-weight: 600; font-size: 0.95rem; }
+    .stack-item .desc { font-size: 0.82rem; color: #6b7280; }
+
+    /* ── PIE ─────────────────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 0.82rem;
+      color: #9ca3af;
+      border-top: 1px solid var(--borde);
+      margin-top: 60px;
+    }
+
+    @media (max-width: 680px) {
+      header { padding: 28px 20px; }
+      .container { padding: 24px 16px; }
+      .scope-grid { grid-template-columns: 1fr; }
+      header h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!--  ENCABEZADO                                           -->
+<!-- ══════════════════════════════════════════════════════ -->
+<header>
+  <div class="badge">Plan de Acción · Social Listening</div>
+  <h1>📡 Módulo Social Listening MVP</h1>
+  <p class="sub">Integración Facebook + Apify para análisis de opinión pública sobre candidatos</p>
+  <div class="meta">
+    <span>Proyecto <strong>ALTERNIS Inteligencia Electoral</strong></span>
+    <span>Plataforma de scraping <strong>Apify</strong></span>
+    <span>Alcance inicial <strong>Facebook (MVP)</strong></span>
+    <span>Duración estimada <strong>3 sprints · ~6 semanas</strong></span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!--  1. CONTEXTO Y OBJETIVO                             -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">1. Contexto y Objetivo</h2>
+
+    <div class="alert info">
+      <span class="alert-icon">💡</span>
+      <div>
+        <strong>Propósito del módulo:</strong> Permitir a coordinadores y candidatos entender qué opina
+        el público de una persona en redes sociales, extrayendo posts y comentarios de perfiles de
+        Facebook públicos, y analizando automáticamente el sentimiento y los temas recurrentes.
+        Complementa el <em>Semáforo de Posicionamiento</em> (prensa) con datos de redes sociales.
+      </div>
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <h4 style="margin-bottom:8px; color:var(--azul)">🎯 Problema que resuelve</h4>
+        <p style="font-size:0.9rem">
+          Los equipos de campaña carecen de una visión consolidada de la conversación social sobre el candidato.
+          Actualmente deben revisar perfiles manualmente, sin métricas, sin tendencias y sin análisis de tono.
+        </p>
+      </div>
+      <div class="card">
+        <h4 style="margin-bottom:8px; color:var(--verde)">✅ Solución propuesta</h4>
+        <p style="font-size:0.9rem">
+          Módulo integrado en la app existente: el usuario ingresa la URL del perfil de Facebook del candidato
+          o rival, la app scrapea vía Apify, analiza el texto y devuelve un dashboard de sentimiento + n-gramas + resumen ejecutivo.
+        </p>
+      </div>
+      <div class="card">
+        <h4 style="margin-bottom:8px; color:var(--naranja)">📐 Posicionamiento en la arquitectura</h4>
+        <p style="font-size:0.9rem">
+          Sigue exactamente el mismo patrón del módulo <code>posicionamiento.py</code> (Semáforo de Prensa):
+          API externa → extracción de texto → análisis de tono → n-gramas → respuesta estructurada al frontend.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!--  2. ALCANCE DEL MVP                                 -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">2. Alcance del MVP — ¿Qué incluye y qué queda fuera?</h2>
+
+    <div class="scope-grid">
+      <div class="scope-in">
+        <h4>✅ INCLUIDO en el MVP</h4>
+        <ul>
+          <li>Scraping de <strong>posts públicos</strong> de un perfil o página de Facebook</li>
+          <li>Extracción de <strong>comentarios</strong> de esos posts</li>
+          <li>Análisis de <strong>sentimiento</strong> por comentario (positivo / neutro / negativo)</li>
+          <li><strong>N-gramas</strong> (bigramas y trigramas) más frecuentes en comentarios</li>
+          <li><strong>Resumen ejecutivo</strong> generado por LLM (Groq, reutilizando infraestructura existente)</li>
+          <li>Panel de resultados en el frontend con gráfica de sentimiento + nube de n-gramas</li>
+          <li>Exportación PDF del reporte (reutilizando <code>informes.py</code>)</li>
+          <li>Protección del endpoint: solo rol <code>coordinador</code> o <code>admin</code></li>
+          <li>1 variable de entorno nueva: <code>APIFY_API_TOKEN</code></li>
+        </ul>
+      </div>
+      <div class="scope-out">
+        <h4>🚫 FUERA del MVP (versiones futuras)</h4>
+        <ul>
+          <li>Otras redes sociales (Instagram, X/Twitter, TikTok)</li>
+          <li>Scraping de grupos privados o cuentas privadas</li>
+          <li>Monitoreo automático / alertas recurrentes (scheduler)</li>
+          <li>Comparación multi-candidato en Social Listening</li>
+          <li>Segmentación demográfica de comentaristas</li>
+          <li>Detección de bots o cuentas falsas</li>
+          <li>Almacenamiento histórico de análisis pasados (v2)</li>
+          <li>Webhooks de Apify para procesamiento asíncrono pesado</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!--  3. ACTORES DE APIFY                                -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">3. Actores de Apify — Selección para el MVP</h2>
+
+    <div class="alert warning">
+      <span class="alert-icon">⚠️</span>
+      <div>
+        <strong>Importante:</strong> Los actores de Apify solo pueden scraping de <em>contenido público</em>.
+        Perfiles y páginas con privacidad activada no serán accesibles. Comunicar este límite al usuario final en la UI.
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Actor Apify</th>
+          <th>Uso en el MVP</th>
+          <th>ID del Actor</th>
+          <th>Datos que devuelve</th>
+          <th>Costo estimado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Facebook Posts Scraper</strong></td>
+          <td>✅ PASO 1 — Extraer posts de un perfil/página</td>
+          <td><code>apify/facebook-posts-scraper</code></td>
+          <td>Texto del post, fecha, likes, shares, URL del post</td>
+          <td>~$0.50 USD / 1,000 posts</td>
+        </tr>
+        <tr>
+          <td><strong>Facebook Comments Scraper</strong></td>
+          <td>✅ PASO 2 — Extraer comentarios de cada post</td>
+          <td><code>apify/facebook-comments-scraper</code></td>
+          <td>Texto comentario, autor, fecha, likes, respuestas</td>
+          <td>~$0.50 USD / 1,000 comentarios</td>
+        </tr>
+        <tr>
+          <td>Facebook Group &amp; Page Scraper</td>
+          <td>🔶 Alternativa si perfil es Página (no perfil personal)</td>
+          <td><code>apify/facebook-group-page-scraper</code></td>
+          <td>Posts + comentarios en un solo actor</td>
+          <td>~$1.00 USD / 1,000 items</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="alert success" style="margin-top:16px">
+      <span class="alert-icon">🔑</span>
+      <div>
+        <strong>Estrategia recomendada para el MVP:</strong>
+        Pipeline de 2 pasos encadenados:
+        <strong>(1)</strong> Posts Scraper para obtener URLs de posts →
+        <strong>(2)</strong> Comments Scraper para cada URL → análisis del texto de comentarios.
+        Limitar a los <strong>20 posts más recientes</strong> y máximo <strong>100 comentarios por post</strong>
+        para mantener tiempos de respuesta razonables y costo controlado.
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!--  4. ARQUITECTURA TÉCNICA                            -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">4. Arquitectura Técnica del Módulo</h2>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 980 520" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, sans-serif">
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#6b7280"/>
+          </marker>
+          <marker id="arr2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#2563a8"/>
+          </marker>
+        </defs>
+
+        <!-- TÍTULO -->
+        <text x="490" y="28" text-anchor="middle" font-size="15" font-weight="700" fill="#1a3a5c">Flujo de Procesamiento — Módulo Social Listening</text>
+
+        <!-- CAPA 1: USUARIO -->
+        <rect x="10" y="50" width="180" height="90" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+        <text x="100" y="74" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">👤 FRONTEND</text>
+        <text x="100" y="92" text-anchor="middle" font-size="10" fill="#374151">Tab: Social Listening</text>
+        <text x="100" y="107" text-anchor="middle" font-size="10" fill="#374151">• URL perfil Facebook</text>
+        <text x="100" y="120" text-anchor="middle" font-size="10" fill="#374151">• N° posts / comentarios</text>
+
+        <!-- CAPA 2: API ENDPOINT -->
+        <rect x="240" y="50" width="180" height="90" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+        <text x="330" y="74" text-anchor="middle" font-size="12" font-weight="700" fill="#166534">⚡ FASTAPI</text>
+        <text x="330" y="92" text-anchor="middle" font-size="10" fill="#374151">POST /api/social/analizar</text>
+        <text x="330" y="107" text-anchor="middle" font-size="10" fill="#374151">Auth: rol coordinador+</text>
+        <text x="330" y="120" text-anchor="middle" font-size="10" fill="#374151">Pydantic: SolicitudSocial</text>
+
+        <!-- CAPA 3: SOCIAL_LISTENING.PY -->
+        <rect x="470" y="40" width="200" height="110" rx="8" fill="#fdf4ff" stroke="#d8b4fe" stroke-width="1.5"/>
+        <text x="570" y="64" text-anchor="middle" font-size="12" font-weight="700" fill="#6d28d9">🧠 social_listening.py</text>
+        <text x="570" y="82" text-anchor="middle" font-size="10" fill="#374151">1. Llama Posts Scraper</text>
+        <text x="570" y="97" text-anchor="middle" font-size="10" fill="#374151">2. Llama Comments Scraper</text>
+        <text x="570" y="112" text-anchor="middle" font-size="10" fill="#374151">3. Análisis de sentimiento</text>
+        <text x="570" y="127" text-anchor="middle" font-size="10" fill="#374151">4. N-gramas + LLM resumen</text>
+
+        <!-- CAPA 4: APIFY -->
+        <rect x="730" y="50" width="220" height="90" rx="8" fill="#fff7ed" stroke="#fcd34d" stroke-width="1.5"/>
+        <text x="840" y="74" text-anchor="middle" font-size="12" font-weight="700" fill="#92400e">🌐 APIFY API</text>
+        <text x="840" y="92" text-anchor="middle" font-size="10" fill="#374151">facebook-posts-scraper</text>
+        <text x="840" y="107" text-anchor="middle" font-size="10" fill="#374151">facebook-comments-scraper</text>
+        <text x="840" y="120" text-anchor="middle" font-size="10" fill="#374151">Datos públicos de Facebook</text>
+
+        <!-- ANÁLISIS INTERNO -->
+        <rect x="240" y="200" width="180" height="90" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5"/>
+        <text x="330" y="224" text-anchor="middle" font-size="12" font-weight="700" fill="#1d4ed8">📊 ANÁLISIS NLP</text>
+        <text x="330" y="242" text-anchor="middle" font-size="10" fill="#374151">Sentimiento: SpaCy +</text>
+        <text x="330" y="257" text-anchor="middle" font-size="10" fill="#374151">léxico POSITIVAS/NEGATIVAS</text>
+        <text x="330" y="272" text-anchor="middle" font-size="10" fill="#374151">N-gramas: CountVectorizer</text>
+
+        <!-- GROQ LLM -->
+        <rect x="470" y="200" width="200" height="90" rx="8" fill="#fdf2f8" stroke="#f9a8d4" stroke-width="1.5"/>
+        <text x="570" y="224" text-anchor="middle" font-size="12" font-weight="700" fill="#9d174d">🤖 GROQ LLM</text>
+        <text x="570" y="242" text-anchor="middle" font-size="10" fill="#374151">Resumen ejecutivo</text>
+        <text x="570" y="257" text-anchor="middle" font-size="10" fill="#374151">Temas principales</text>
+        <text x="570" y="272" text-anchor="middle" font-size="10" fill="#374151">(reutiliza clave existente)</text>
+
+        <!-- RESULTADO -->
+        <rect x="240" y="360" width="430" height="90" rx="8" fill="#f0fdf4" stroke="#86efac" stroke-width="2"/>
+        <text x="455" y="384" text-anchor="middle" font-size="12" font-weight="700" fill="#166534">📦 RESULTADO JSON → Frontend</text>
+        <text x="455" y="403" text-anchor="middle" font-size="10" fill="#374151">{ sentimiento: {positivo: %, neutro: %, negativo: %},</text>
+        <text x="455" y="418" text-anchor="middle" font-size="10" fill="#374151">  ngramas: [{texto, frecuencia}], resumen: "...",</text>
+        <text x="455" y="433" text-anchor="middle" font-size="10" fill="#374151">  total_comentarios: N, posts_analizados: N }</text>
+
+        <!-- INFORMES PDF -->
+        <rect x="730" y="360" width="200" height="90" rx="8" fill="#fff7ed" stroke="#fcd34d" stroke-width="1.5"/>
+        <text x="830" y="384" text-anchor="middle" font-size="12" font-weight="700" fill="#92400e">📄 informes.py</text>
+        <text x="830" y="402" text-anchor="middle" font-size="10" fill="#374151">Exportación PDF</text>
+        <text x="830" y="417" text-anchor="middle" font-size="10" fill="#374151">Reutilización directa</text>
+        <text x="830" y="432" text-anchor="middle" font-size="10" fill="#374151">del módulo existente</text>
+
+        <!-- FLECHAS HORIZONTALES CAPA SUPERIOR -->
+        <line x1="192" y1="95" x2="238" y2="95" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="422" y1="95" x2="468" y2="95" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="672" y1="95" x2="728" y2="95" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- RETORNO APIFY → social_listening.py -->
+        <line x1="730" y1="115" x2="672" y2="115" stroke="#2563a8" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr2)"/>
+
+        <!-- FLECHAS VERTICALES ANÁLISIS -->
+        <line x1="330" y1="142" x2="330" y2="198" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="570" y1="152" x2="570" y2="198" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- FLECHAS → RESULTADO -->
+        <line x1="330" y1="292" x2="330" y2="358" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arr)"/>
+        <line x1="570" y1="292" x2="570" y2="358" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arr)"/>
+
+        <!-- FLECHA RESULTADO → PDF -->
+        <line x1="672" y1="405" x2="728" y2="405" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+
+        <!-- FLECHA RESULTADO → FRONTEND (retorno) -->
+        <line x1="455" y1="360" x2="100" y2="200" stroke="#2563a8" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr2)"/>
+        <text x="250" y="290" font-size="10" fill="#2563a8" transform="rotate(-18, 250, 290)">respuesta JSON</text>
+
+        <!-- LEYENDA -->
+        <rect x="10" y="440" width="200" height="70" rx="6" fill="#f9fafb" stroke="#e5e7eb"/>
+        <text x="20" y="460" font-size="11" font-weight="700" fill="#374151">Leyenda:</text>
+        <line x1="20" y1="475" x2="50" y2="475" stroke="#6b7280" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="56" y="479" font-size="10" fill="#374151">Flujo principal</text>
+        <line x1="20" y1="495" x2="50" y2="495" stroke="#2563a8" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr2)"/>
+        <text x="56" y="499" font-size="10" fill="#374151">Retorno de datos</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!--  5. STACK TÉCNICO                                   -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">5. Stack Técnico — Nuevas Dependencias vs. Reutilizadas</h2>
+
+    <div class="card-grid">
+      <div>
+        <h3 class="section-subtitle">🆕 Nuevas dependencias (pip)</h3>
+        <div class="stack-item">
+          <span class="icon">📦</span>
+          <div>
+            <div class="name"><code>apify-client</code></div>
+            <div class="desc">SDK oficial de Apify para Python. Manejo de runs, datasets y retries automáticos.</div>
+          </div>
+        </div>
+        <div class="stack-item">
+          <span class="icon">📦</span>
+          <div>
+            <div class="name"><code>scikit-learn</code> (si no está instalado)</div>
+            <div class="desc">Para <code>CountVectorizer</code> y extracción de n-gramas sobre el corpus de comentarios.</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3 class="section-subtitle">♻️ Reutilizadas del proyecto</h3>
+        <div class="stack-item">
+          <span class="icon">🔁</span>
+          <div>
+            <div class="name"><code>spaCy</code> + léxicos POSITIVAS/NEGATIVAS</div>
+            <div class="desc">Del módulo <code>posicionamiento.py</code> — Análisis de tono por comentario.</div>
+          </div>
+        </div>
+        <div class="stack-item">
+          <span class="icon">🔁</span>
+          <div>
+            <div class="name"><code>Groq API</code> (<code>GROQ_API_KEY</code>)</div>
+            <div class="desc">Para generar el resumen ejecutivo interpretando el análisis cuantitativo.</div>
+          </div>
+        </div>
+        <div class="stack-item">
+          <span class="icon">🔁</span>
+          <div>
+            <div class="name"><code>informes.py</code> (ReportLab)</div>
+            <div class="desc">Para exportar el reporte de social listening en PDF.</div>
+          </div>
+        </div>
+        <div class="stack-item">
+          <span class="icon">🔁</span>
+          <div>
+            <div class="name"><code>auth.py</code> — <code>requiere("coordinador")</code></div>
+            <div class="desc">Control de acceso idéntico al de los endpoints existentes sensibles.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!--  6. ESTRUCTURA DE ARCHIVOS A CREAR/MODIFICAR        -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">6. Archivos a Crear y Modificar</h2>
+
+    <table>
+      <thead>
+        <tr><th>Archivo</th><th>Acción</th><th>Descripción del cambio</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>backend/social_listening.py</code></td>
+          <td><span class="chip chip-blue">CREAR</span></td>
+          <td>Módulo principal. Clases <code>SolicitudSocial</code> (Pydantic), <code>ResultadoSocial</code> y función <code>analizar_perfil()</code> que orquesta todo el pipeline.</td>
+        </tr>
+        <tr>
+          <td><code>backend/main.py</code></td>
+          <td><span class="chip chip-orange">MODIFICAR</span></td>
+          <td>Importar <code>social_listening</code> y agregar 2 endpoints: <code>POST /api/social/analizar</code> y <code>GET /api/social/exportar-pdf</code>.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/index.html</code></td>
+          <td><span class="chip chip-orange">MODIFICAR</span></td>
+          <td>Agregar tab "Social Listening" en la navegación principal, formulario de entrada y contenedor de resultados.</td>
+        </tr>
+        <tr>
+          <td><code>frontend/assets/social.js</code></td>
+          <td><span class="chip chip-blue">CREAR</span></td>
+          <td>Lógica JS: llamar al endpoint, renderizar gráfica de sentimiento (barras o donut), tabla de n-gramas y resumen ejecutivo.</td>
+        </tr>
+        <tr>
+          <td><code>.env</code> / <code>.env.example</code></td>
+          <td><span class="chip chip-orange">MODIFICAR</span></td>
+          <td>Agregar variable <code>APIFY_API_TOKEN=</code> (sin valor real en el ejemplo).</td>
+        </tr>
+        <tr>
+          <td><code>requirements.txt</code></td>
+          <td><span class="chip chip-orange">MODIFICAR</span></td>
+          <td>Agregar <code>apify-client&gt;=1.7.0</code> y verificar si <code>scikit-learn</code> ya está listado.</td>
+        </tr>
+        <tr>
+          <td><code>assets/tour.js</code></td>
+          <td><span class="chip chip-orange">MODIFICAR</span></td>
+          <td>Agregar paso del tour para el nuevo tab de Social Listening.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!--  7. DISEÑO DEL CÓDIGO BACKEND                       -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">7. Diseño del Código Backend — Esquema de Referencia</h2>
+
+    <div class="alert info">
+      <span class="alert-icon">📝</span>
+      <div>Este es el diseño de referencia que guiará la implementación. No es código final — es la especificación funcional del módulo.</div>
+    </div>
+
+    <div class="code-block-title">backend/social_listening.py — Estructura principal</div>
+    <pre>
+"""Social Listening: scraping de Facebook vía Apify + análisis de sentimiento y n-gramas."""
+from __future__ import annotations
+
+import os
+from collections import Counter
+from typing import Optional
+from pydantic import BaseModel, HttpUrl
+
+from apify_client import ApifyClient
+from sklearn.feature_extraction.text import CountVectorizer
+import spacy  # reutiliza el mismo modelo que posicionamiento.py
+
+# ── CONSTANTES ──────────────────────────────────────────────────────────────
+ACTOR_POSTS    = "apify/facebook-posts-scraper"
+ACTOR_COMMENTS = "apify/facebook-comments-scraper"
+MAX_POSTS      = 20      # Límite MVP: posts más recientes
+MAX_COMENTARIOS_POR_POST = 100
+
+# Léxicos reutilizados de posicionamiento.py (extraer a módulo compartido en v2)
+POSITIVAS = { "apoya", "avance", "celebra", "logro", "mejora", ... }
+NEGATIVAS = { "acusa", "denuncia", "critica", "corrupción", ... }
+
+# ── MODELOS PYDANTIC ─────────────────────────────────────────────────────────
+class SolicitudSocial(BaseModel):
+    url_perfil: HttpUrl          # URL del perfil/página de Facebook
+    max_posts: int = MAX_POSTS
+    max_comentarios: int = MAX_COMENTARIOS_POR_POST
+
+class ResultadoSocial(BaseModel):
+    url_perfil: str
+    posts_analizados: int
+    total_comentarios: int
+    sentimiento: dict            # {"positivo": %, "neutro": %, "negativo": %}
+    ngramas: list[dict]          # [{"texto": "...", "frecuencia": N}, ...]
+    resumen: str                 # Resumen ejecutivo del LLM
+    error: Optional[str] = None  # Si Apify falló o perfil privado
+
+# ── PIPELINE PRINCIPAL ───────────────────────────────────────────────────────
+def analizar_perfil(solicitud: SolicitudSocial) -> ResultadoSocial:
+    token = os.environ["APIFY_API_TOKEN"]
+    client = ApifyClient(token)
+
+    # PASO 1: Obtener URLs de posts
+    post_urls = _obtener_posts(client, str(solicitud.url_perfil), solicitud.max_posts)
+
+    # PASO 2: Obtener comentarios de cada post
+    comentarios = _obtener_comentarios(client, post_urls, solicitud.max_comentarios)
+
+    # PASO 3: Análisis de sentimiento comentario a comentario
+    sentimiento = _analizar_sentimiento(comentarios)
+
+    # PASO 4: N-gramas del corpus completo
+    ngramas = _extraer_ngramas(comentarios, n=2, top_k=20)  # bigramas top 20
+
+    # PASO 5: Resumen ejecutivo con Groq (LLM existente)
+    resumen = _generar_resumen(sentimiento, ngramas, str(solicitud.url_perfil))
+
+    return ResultadoSocial(
+        url_perfil=str(solicitud.url_perfil),
+        posts_analizados=len(post_urls),
+        total_comentarios=len(comentarios),
+        sentimiento=sentimiento,
+        ngramas=ngramas,
+        resumen=resumen,
+    )
+
+# ── FUNCIONES AUXILIARES (bosquejo) ─────────────────────────────────────────
+def _obtener_posts(client, url, max_posts) -> list[str]:
+    """Ejecuta facebook-posts-scraper y devuelve lista de URLs de posts."""
+    run = client.actor(ACTOR_POSTS).call(run_input={
+        "startUrls": [{"url": url}],
+        "resultsLimit": max_posts,
+    })
+    items = client.dataset(run["defaultDatasetId"]).list_items().items
+    return [item["url"] for item in items if "url" in item]
+
+def _obtener_comentarios(client, post_urls, max_por_post) -> list[str]:
+    """Ejecuta facebook-comments-scraper para cada post y acumula texto."""
+    textos = []
+    for post_url in post_urls:
+        run = client.actor(ACTOR_COMMENTS).call(run_input={
+            "postUrls": [post_url],
+            "resultsLimit": max_por_post,
+        })
+        items = client.dataset(run["defaultDatasetId"]).list_items().items
+        textos += [item["text"] for item in items if item.get("text")]
+    return textos
+
+def _analizar_sentimiento(comentarios: list[str]) -> dict:
+    """Clasifica cada comentario y devuelve proporciones."""
+    conteo = Counter()
+    for texto in comentarios:
+        palabras = set(texto.lower().split())
+        pos = len(palabras & POSITIVAS)
+        neg = len(palabras & NEGATIVAS)
+        if pos > neg:   conteo["positivo"] += 1
+        elif neg > pos: conteo["negativo"] += 1
+        else:           conteo["neutro"] += 1
+    total = sum(conteo.values()) or 1
+    return {k: round(v / total * 100, 1) for k, v in conteo.items()}
+
+def _extraer_ngramas(comentarios: list[str], n: int, top_k: int) -> list[dict]:
+    """Extrae los n-gramas más frecuentes del corpus."""
+    corpus = [" ".join(comentarios)]  # concatenar para CountVectorizer
+    vec = CountVectorizer(ngram_range=(n, n), stop_words=list(STOP_WORDS_ES))
+    X = vec.fit_transform(corpus)
+    freqs = zip(vec.get_feature_names_out(), X.toarray()[0])
+    top = sorted(freqs, key=lambda x: x[1], reverse=True)[:top_k]
+    return [{"texto": t, "frecuencia": int(f)} for t, f in top]
+
+def _generar_resumen(sentimiento, ngramas, url_perfil) -> str:
+    """Usa Groq para generar un resumen ejecutivo interpretando los datos."""
+    # Patrón idéntico al de posicionamiento.py
+    import groq  # o requests al endpoint Groq
+    temas = ", ".join([ng["texto"] for ng in ngramas[:5]])
+    prompt = f"""Analiza los siguientes datos de redes sociales del perfil {url_perfil}:
+Sentimiento: {sentimiento}
+Temas más comentados: {temas}
+Redacta un resumen ejecutivo de 3 párrafos en español sobre la percepción pública."""
+    # ... llamada al LLM y return del texto
+</pre>
+
+    <div class="code-block-title">backend/main.py — Endpoints nuevos a agregar</div>
+    <pre>
+from backend import social_listening  # importar al inicio junto a los otros módulos
+
+@app.post("/api/social/analizar")
+async def analizar_social(
+    solicitud: social_listening.SolicitudSocial,
+    usuario=Depends(auth.requiere("coordinador"))
+):
+    """Ejecuta el pipeline de Social Listening para un perfil de Facebook."""
+    try:
+        resultado = await asyncio.get_event_loop().run_in_executor(
+            None, social_listening.analizar_perfil, solicitud
+        )
+        return resultado
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/social/exportar-pdf")
+async def exportar_social_pdf(
+    resultado: social_listening.ResultadoSocial,
+    usuario=Depends(auth.requiere("coordinador"))
+):
+    """Genera y descarga el reporte PDF de Social Listening."""
+    pdf_bytes = informes.social_listening_pdf(resultado)
+    return Response(content=pdf_bytes, media_type="application/pdf",
+                    headers={"Content-Disposition": "attachment; filename=social_listening.pdf"})
+</pre>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!--  8. DISEÑO DEL FRONTEND                             -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">8. Diseño del Frontend — Panel de Resultados</h2>
+
+    <div class="card-grid">
+      <div class="card">
+        <h4 style="color:var(--azul); margin-bottom:10px">📋 Formulario de entrada</h4>
+        <ul style="padding-left:18px; font-size:0.9rem">
+          <li>Campo de texto: URL del perfil de Facebook</li>
+          <li>Slider: número de posts (5–50, default 20)</li>
+          <li>Slider: comentarios por post (20–200, default 100)</li>
+          <li>Botón "Analizar" (llama a <code>POST /api/social/analizar</code>)</li>
+          <li>Estado de progreso: "Scrapeando posts… Analizando comentarios…"</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4 style="color:var(--verde); margin-bottom:10px">📊 Panel de resultados</h4>
+        <ul style="padding-left:18px; font-size:0.9rem">
+          <li>Tarjeta: % Positivo / % Neutro / % Negativo (con colores)</li>
+          <li>Gráfica de barras horizontales de sentimiento (SVG o Chart.js)</li>
+          <li>Tabla: top 20 bigramas con barra de frecuencia visual</li>
+          <li>Sección: Resumen Ejecutivo (texto del LLM)</li>
+          <li>Botón "Exportar PDF"</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4 style="color:var(--naranja); margin-bottom:10px">⚙️ Consideraciones UX</h4>
+        <ul style="padding-left:18px; font-size:0.9rem">
+          <li>Loader con etapas (el scraping puede tardar 30–120 seg)</li>
+          <li>Mensaje claro si el perfil es privado o no se encontró</li>
+          <li>Tooltip explicando qué son los n-gramas</li>
+          <li>Responsive: usable en tablet (coordinadores en campo)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!--  9. PLAN DE FASES — SPRINTS                         -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">9. Plan de Fases — 3 Sprints para el MVP</h2>
+
+    <div class="fase-grid">
+
+      <div class="fase fase-1">
+        <div class="fase-num">Sprint 1 — Semanas 1–2</div>
+        <div class="fase-title">🔧 Backend Core</div>
+        <div class="fase-days">10 días hábiles</div>
+        <ul>
+          <li>Crear cuenta y generar <code>APIFY_API_TOKEN</code></li>
+          <li>Instalar <code>apify-client</code>, actualizar <code>requirements.txt</code></li>
+          <li>Crear <code>backend/social_listening.py</code> con el pipeline completo</li>
+          <li>Probar actores de Apify con perfil de prueba</li>
+          <li>Implementar análisis de sentimiento (léxico) y n-gramas</li>
+          <li>Conectar con Groq para el resumen ejecutivo</li>
+          <li>Agregar endpoints en <code>main.py</code></li>
+          <li>Pruebas manuales con <code>curl</code> o Postman</li>
+        </ul>
+      </div>
+
+      <div class="fase fase-2">
+        <div class="fase-num">Sprint 2 — Semanas 3–4</div>
+        <div class="fase-title">🖥️ Frontend + UX</div>
+        <div class="fase-days">10 días hábiles</div>
+        <ul>
+          <li>Agregar tab "Social Listening" en <code>index.html</code></li>
+          <li>Crear <code>assets/social.js</code> con lógica de llamada y render</li>
+          <li>Diseñar panel de resultados: sentimiento + n-gramas</li>
+          <li>Implementar loader con mensajes de progreso por etapa</li>
+          <li>Manejo de errores en UI (perfil privado, timeout, sin resultados)</li>
+          <li>Agregar paso del módulo en <code>tour.js</code></li>
+          <li>Pruebas de integración end-to-end</li>
+        </ul>
+      </div>
+
+      <div class="fase fase-3">
+        <div class="fase-num">Sprint 3 — Semanas 5–6</div>
+        <div class="fase-title">📄 PDF + Pulido + QA</div>
+        <div class="fase-days">10 días hábiles</div>
+        <ul>
+          <li>Implementar exportación PDF en <code>informes.py</code></li>
+          <li>Ajuste del análisis de sentimiento (calibrar léxico con datos reales)</li>
+          <li>Pruebas con perfiles reales de candidatos de prueba</li>
+          <li>Ajuste de tiempos de espera y manejo de timeouts de Apify</li>
+          <li>Revisión de seguridad del endpoint y validación de URLs</li>
+          <li>Documentar en <code>README.md</code>: nueva variable <code>APIFY_API_TOKEN</code></li>
+          <li>Demo interna con el equipo y ajustes finales</li>
+        </ul>
+      </div>
+
+      <div class="fase fase-4">
+        <div class="fase-num">Post-MVP — Backlog</div>
+        <div class="fase-title">🚀 Siguiente Iteración</div>
+        <div class="fase-days">Versión 2</div>
+        <ul>
+          <li>Análisis asíncrono con webhooks de Apify (para corpus grandes)</li>
+          <li>Histórico de análisis por candidato en <code>plataforma.db</code></li>
+          <li>Comparación entre 2 perfiles (candidato vs. oponente)</li>
+          <li>Soporte para Instagram y X (Twitter)</li>
+          <li>Alertas de cambio de sentimiento (monitoreo continuo)</li>
+          <li>Análisis de sentimiento mejorado con modelo Groq por comentario</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!--  10. RIESGOS Y MITIGACIONES                         -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">10. Riesgos y Mitigaciones</h2>
+
+    <table>
+      <thead>
+        <tr><th>Riesgo</th><th>Probabilidad</th><th>Impacto</th><th>Mitigación</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Perfil de Facebook es privado → sin datos</td>
+          <td><span class="chip chip-orange">Alta</span></td>
+          <td><span class="chip chip-orange">Alto</span></td>
+          <td>Detectar respuesta vacía de Apify y mostrar mensaje claro al usuario. Documentar la limitación en la UI.</td>
+        </tr>
+        <tr>
+          <td>Tiempo de scraping excede 2 minutos → timeout HTTP</td>
+          <td><span class="chip chip-orange">Media</span></td>
+          <td><span class="chip chip-orange">Alto</span></td>
+          <td>Ejecutar el scraping en <code>run_in_executor</code> (ya contemplado). Para MVP: limitar a 20 posts y 100 comentarios.</td>
+        </tr>
+        <tr>
+          <td>Apify cambia los IDs o estructura de los actores</td>
+          <td><span class="chip chip-blue">Baja</span></td>
+          <td><span class="chip chip-orange">Alto</span></td>
+          <td>Centralizar los IDs de actores en constantes en <code>social_listening.py</code> para cambiarlos en un solo lugar.</td>
+        </tr>
+        <tr>
+          <td>Costo de Apify se dispara con uso intensivo</td>
+          <td><span class="chip chip-blue">Baja</span></td>
+          <td><span class="chip chip-orange">Medio</span></td>
+          <td>Configurar límite de créditos mensual en Apify Console. Mostrar estimación de costo antes de ejecutar el análisis.</td>
+        </tr>
+        <tr>
+          <td>Análisis de sentimiento léxico impreciso (modismos políticos mexicanos)</td>
+          <td><span class="chip chip-orange">Alta</span></td>
+          <td><span class="chip chip-blue">Medio</span></td>
+          <td>Para MVP es aceptable. En v2: análisis por comentario usando Groq para mayor precisión contextual.</td>
+        </tr>
+        <tr>
+          <td>Facebook bloquea el scraper de Apify (cambios en HTML)</td>
+          <td><span class="chip chip-blue">Baja</span></td>
+          <td><span class="chip chip-red">Crítico</span></td>
+          <td>Es responsabilidad de Apify mantener sus actores. Monitorear el status de los actores. Considerar el Group &amp; Page Scraper como alternativa.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!--  11. CONFIGURACIÓN NECESARIA (CHECKLIST DE INICIO)  -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">11. Checklist de Configuración Inicial (Antes de Codificar)</h2>
+
+    <div class="card">
+      <ul class="checklist">
+        <li>Crear cuenta en <a href="https://apify.com" target="_blank">apify.com</a> (plan Starter o superior para uso en producción)</li>
+        <li>Obtener el <code>APIFY_API_TOKEN</code> desde Apify Console → Settings → Integrations</li>
+        <li>Agregar <code>APIFY_API_TOKEN=tu_token_aqui</code> al archivo <code>.env</code> local</li>
+        <li>Agregar <code>APIFY_API_TOKEN=</code> (sin valor) al archivo <code>.env.example</code></li>
+        <li>Ejecutar: <code>pip install apify-client</code> y actualizar <code>requirements.txt</code></li>
+        <li>Verificar que <code>scikit-learn</code> esté en <code>requirements.txt</code> (para CountVectorizer)</li>
+        <li>Probar el actor <code>apify/facebook-posts-scraper</code> directamente en la consola de Apify con un perfil público de prueba</li>
+        <li>Confirmar que el perfil de Facebook objetivo es una Página Pública (no perfil personal privado)</li>
+        <li>Definir el límite mensual de créditos en la cuenta Apify para controlar costos</li>
+        <li>Agregar la sección <code>APIFY_API_TOKEN</code> al <code>README.md</code> del proyecto</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!--  12. ESTIMACIÓN DE COSTOS                           -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">12. Estimación de Costos de Operación</h2>
+
+    <table>
+      <thead>
+        <tr><th>Escenario</th><th>Posts</th><th>Comentarios</th><th>Costo estimado Apify</th><th>Tiempo estimado</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Análisis básico (MVP)</strong></td>
+          <td>20 posts</td>
+          <td>100 × 20 = 2,000</td>
+          <td>~$0.10 – $0.20 USD por análisis</td>
+          <td>30 – 90 segundos</td>
+        </tr>
+        <tr>
+          <td>Análisis estándar</td>
+          <td>50 posts</td>
+          <td>100 × 50 = 5,000</td>
+          <td>~$0.25 – $0.50 USD por análisis</td>
+          <td>2 – 5 minutos</td>
+        </tr>
+        <tr>
+          <td>Análisis profundo</td>
+          <td>100 posts</td>
+          <td>200 × 100 = 20,000</td>
+          <td>~$1.00 – $2.00 USD por análisis</td>
+          <td>5 – 15 minutos</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="alert success" style="margin-top:16px">
+      <span class="alert-icon">💰</span>
+      <div>
+        <strong>Modelo de recuperación de costo:</strong> Con planes de suscripción a $2,490–$18,500 MXN/mes,
+        el costo operativo de Apify ($0.10–$2 por análisis) es <em>marginal</em>. Se puede establecer una
+        cuota de análisis por plan (ej.: 30 análisis/mes en plan Local, 200 en Municipal) para controlar el gasto.
+        Apify cobra por resultados obtenidos, no por tiempo de cómputo.
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════ -->
+  <!--  RESUMEN EJECUTIVO FINAL                            -->
+  <!-- ════════════════════════════════════════════════════ -->
+  <div class="section">
+    <h2 class="section-title">Resumen Ejecutivo</h2>
+    <div class="card">
+      <p style="font-size:1rem; line-height:1.8">
+        El módulo de <strong>Social Listening MVP</strong> puede construirse en <strong>6 semanas</strong>
+        siguiendo el mismo patrón arquitectónico del Semáforo de Posicionamiento ya existente.
+        La integración con <strong>Apify</strong> a través de su SDK oficial (<code>apify-client</code>)
+        es directa y bien documentada. El análisis de sentimiento reutiliza la infraestructura SpaCy y
+        los léxicos ya presentes en el proyecto, y el resumen ejecutivo reutiliza la integración con Groq.
+      </p>
+      <p style="font-size:1rem; line-height:1.8; margin-top:12px">
+        El costo operativo de Apify es marginal frente al valor generado ($0.10–$2 USD por análisis vs.
+        $2,490–$18,500 MXN/mes de suscripción). La principal restricción técnica es que
+        solo funciona con <strong>perfiles y páginas públicas</strong> de Facebook.
+      </p>
+      <p style="font-size:1rem; line-height:1.8; margin-top:12px">
+        La inversión en este módulo diferencia significativamente la plataforma frente a competidores,
+        convirtiendo a ALTERNIS en una herramienta completa de inteligencia electoral: prensa digital
+        (ya existe) + redes sociales (nuevo módulo) + análisis territorial + gestión de campaña.
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  ALTERNIS Inteligencia Electoral — Plan Social Listening MVP · Generado con Antigravity CLI
+</footer>
+
+</body>
+</html>

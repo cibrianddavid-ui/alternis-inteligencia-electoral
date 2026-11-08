@@ -291,3 +291,18 @@ document.addEventListener('app:ready', async () => {
   } catch (error) { speechEls.status.textContent = error.message; }
   loadSpeechHistory();
 });
+
+// Territorio activo: prellena «Usar datos de un territorio» mientras el discurso aún no empieza.
+let speechActiveKey = null;
+async function applyActiveTerritoryToSpeech() {
+  const active = window.TerritorioActivo?.get();
+  if (!active || speech.id || speech.messages.length || speech.busy) return;
+  const key = `${active.nivel}|${active.unidad}`;
+  if (key === speechActiveKey) return;
+  speechActiveKey = key;
+  await setSpeechTerritory({ nivel: active.nivel, unidad: String(active.unidad), eleccion: null });
+  renderQuickAdjustments();
+  speechEls.status.textContent = `Usando el territorio activo: ${territoryName(active.nivel, active.unidad)}. Puedes cambiarlo arriba.`;
+}
+document.addEventListener('tab:changed', (event) => { if (event.detail === 'discursos') applyActiveTerritoryToSpeech(); });
+document.addEventListener('territorio:activo', () => { if (document.querySelector('.tab.active')?.dataset.tab === 'discursos') applyActiveTerritoryToSpeech(); });

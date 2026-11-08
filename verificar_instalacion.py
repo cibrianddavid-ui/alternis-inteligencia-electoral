@@ -11,11 +11,11 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent
 
 BACKEND = [
-    "__init__", "main", "auth", "basedatos", "asistente_electoral", "resultados_graficos", "posicionamiento",
-    "informes", "territorio", "redaccion", "historial", "demo", "campania", "discursos",
+    "__init__", "main", "configuracion", "partidos", "analisis_territorial", "cartografia", "limpieza", "auth", "basedatos", "asistente_electoral", "resultados_graficos", "posicionamiento",
+    "informes", "territorio", "redaccion", "historial", "demo", "campania", "discursos", "social_listening", "social_fallback",
 ]
 FRONTEND = ["index.html", "assets/styles.css", "assets/favicon.svg", "assets/app.js", "assets/auth.js",
-            "assets/territorio.js", "assets/discursos.js", "assets/admin.js", "assets/tour.js"]
+            "assets/territorio.js", "assets/discursos.js", "assets/admin.js", "assets/tour.js", "assets/social.js"]
 RAIZ_ARCHIVOS = ["run.py", "requirements.txt"]
 
 problemas: list[str] = []
@@ -45,7 +45,8 @@ if not any(p.startswith("Falta backend/") for p in problemas):
             problemas.append(f"backend/{nombre}.py no se puede importar: {type(exc).__name__}: {exc}")
 
 for modulo, paquete in (("docx", "python-docx"), ("reportlab", "reportlab"), ("fastapi", "fastapi"),
-                        ("pandas", "pandas"), ("groq", "groq"), ("trafilatura", "trafilatura"), ("spacy", "spacy")):
+                        ("pandas", "pandas"), ("groq", "groq"), ("trafilatura", "trafilatura"), ("spacy", "spacy"),
+                        ("apify_client", "apify-client"), ("sklearn", "scikit-learn")):
     try:
         importlib.import_module(modulo)
     except ImportError:

@@ -1,0 +1,1 @@
+V4.2: La ficha de sección muestra casillas y domicilios aun cuando las coordenadas sean inválidas. El endpoint devuelve registros originales además de GeoJSON. La carga es independiente del interruptor de marcadores. Si el Sheet no es público, exportar CSV a data/casillas_2024.csv.

@@ -7,8 +7,9 @@ const TOUR_STEPS = [
   { tab: 'asistente', title: 'Asistente electoral', text: 'Pregunta en lenguaje natural, por ejemplo «¿quién ganó en Matehuala?». Debajo de cada respuesta verás cómo se interpretó tu consulta, y todas las cifras las calcula el sistema, no el modelo.' },
   { tab: 'territorio', title: 'Perfil territorial', text: 'La ficha de cualquier estado, municipio, distrito o sección: ganadores, margen, participación y secciones más competidas. Desde aquí creas metas y redactas discursos con esos datos.' },
   { tab: 'graficos', title: 'Resultados gráficos', text: 'Compara partidos, elecciones y coaliciones. Cada partido conserva su color, y puedes descargar la gráfica y sus datos.' },
-  { tab: 'semaforo', title: 'Semáforo de posicionamiento', text: 'Analiza la cobertura de prensa de una persona, o compara dos lado a lado: tono, cobertura por semana y un reporte en PDF.', minRole: 'coordinador' },
+  { tab: 'semaforo', title: 'Prensa', text: 'Analiza la cobertura de prensa de una persona, o compara dos lado a lado: tono, cobertura por semana y un reporte en PDF.', minRole: 'coordinador' },
   { tab: 'discursos', title: 'Discursos', text: 'Elige un formato, activa los datos de un territorio y ajusta con un clic. El sistema revisa cada cifra del borrador contra los datos y marca las que no coinciden. Todo se guarda en tu historial y se exporta a Word.', minRole: 'coordinador' },
+  { tab: 'social', title: 'Social Listening', text: 'Ingresa la URL de un perfil público de Facebook y obtén en minutos un análisis de sentimiento (positivo / neutro / negativo), los temas más comentados (bigramas) y un resumen ejecutivo generado por IA. Ideal para monitorear la percepción del candidato en redes.', minRole: 'coordinador' },
   { tab: 'campania', title: 'Campaña y tareas', text: 'Metas con avance medible ligadas a un territorio, tareas por persona y alertas de vencimientos. Lo que planeas en el perfil territorial aparece aquí.' },
   { tab: null, title: 'Listo', text: 'Puedes repetir este recorrido cuando quieras desde «Recorrido», abajo a la izquierda.' },
 ];

@@ -1,0 +1,95 @@
+/* Etapa 1 — tema: la interfaz es neutra y el color lo ponen los datos (partidos).
+   Acento de marca: violeta "tinta de urna". Se carga después de styles.css. */
+:root {
+  --ink: #1b1b26;
+  --muted: #5f6270;
+  --line: #d9dbe1;
+  --canvas: #f2f3f5;
+  --surface: #ffffff;
+  --brand: #5a2d9c;
+  --brand-strong: #46217d;
+  --brand-tint: #efeaf7;
+  --navy: var(--ink);
+  --navy-2: #2b2b3a;
+  --gold: var(--brand);
+  --gold-soft: var(--brand-tint);
+  --shadow: 0 1px 2px rgba(27, 27, 38, .06);
+  font-family: "Schibsted Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+body { font-size: 15px; line-height: 1.5; }
+h1 { font-family: inherit; font-weight: 600; letter-spacing: -.02em; font-size: clamp(1.6rem, 2.6vw, 2.15rem); }
+h2 { font-weight: 600; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+/* Rótulos: oraciones normales, sin mayúsculas ni espaciado */
+.eyebrow { color: var(--muted); font-size: .82rem; font-weight: 500; letter-spacing: 0; text-transform: none; }
+
+/* Barra lateral clara, agrupada por tarea */
+.sidebar { background: var(--surface); color: var(--ink); border-right: 1px solid var(--line); padding: 24px 14px 18px; }
+.brand { padding: 0 8px 20px; }
+.brand-mark { background: var(--brand); border: 0; border-radius: 9px; color: #fff; font-size: .85rem; }
+.brand span { color: var(--muted); }
+.tabs { gap: 2px; }
+.nav-group { margin: 18px 10px 5px; color: var(--muted); font-size: .8rem; font-weight: 600; }
+.nav-group:first-child { margin-top: 0; }
+.tab { grid-template-columns: 22px 1fr; gap: 10px; padding: 9px 10px; border-radius: 8px; color: #3d3f4d; font-size: .93rem; font-weight: 500; }
+.tab:hover { background: #f1f1f5; color: var(--ink); }
+.tab.active { background: var(--brand-tint); color: var(--brand-strong); font-weight: 600; box-shadow: none; }
+.tab-icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; color: inherit; }
+.sidebar-status { border-top: 1px solid var(--line); color: var(--muted); }
+.user-box { border-color: var(--line); }
+
+/* Tarjetas: sin sombra pesada; la jerarquía la da el borde */
+.chat-card, .results-card, .filter-card, .chart-card, .analysis-table-card, .graphics-intro, .dashboard-card, .feature-card {
+  border-radius: 10px; box-shadow: var(--shadow);
+}
+.avatar { background: var(--brand); color: #fff; border-radius: 8px; }
+.bubble { background: #f0f0f4; color: var(--ink); }
+.user-message .bubble { background: var(--ink); }
+.suggestions button { border-color: #d8cdee; background: var(--brand-tint); color: var(--brand-strong); }
+.composer button, .primary-button { background: var(--brand); color: #fff; }
+.composer button:hover, .primary-button:hover { background: var(--brand-strong); }
+.composer:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(90, 45, 156, .12); }
+.mode-button.active { color: var(--brand-strong); }
+.coalition-builder { border-color: #d8cdee; background: var(--brand-tint); }
+.builder-heading strong, .text-button { color: var(--brand-strong); }
+.builder-heading small, .coalition-counter { color: var(--muted); }
+.graphics-intro > span, .empty-state span { background: var(--brand-tint); color: var(--brand); }
+.check-option input { accent-color: var(--brand); }
+th { text-transform: none; color: var(--muted); font-weight: 600; }
+
+/* Celular: el menú pasa a una fila deslizable sin rótulos de grupo */
+@media (max-width: 680px) {
+  .nav-group { display: none; }
+  .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
+
+/* Territorio activo: barra fija sobre todos los módulos */
+.active-territory { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  margin: 0 0 18px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: var(--shadow); }
+.active-territory[hidden], .at-form[hidden], .at-button[hidden] { display: none; }
+.at-label { color: var(--muted); font-size: .8rem; font-weight: 600; }
+.at-current { flex: 1 1 200px; min-width: 0; color: var(--ink); }
+.at-kind { margin-left: 6px; color: var(--muted); font-size: .85rem; }
+.at-button { padding: 6px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; font-size: .88rem; font-weight: 500; cursor: pointer; }
+.at-button:hover { background: var(--brand-tint); border-color: #d8cdee; }
+.at-form { display: flex; flex: 1 1 100%; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.at-form select, .at-form input { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; background: var(--surface); }
+.at-form input { flex: 1 1 220px; min-width: 0; }
+.at-hint { color: #8a2c0d; font-size: .85rem; }
+
+/* Análisis del territorio */
+.tp-analysis h4 { margin: 22px 0 6px; font-size: .98rem; font-weight: 600; }
+.tp-up { color: #1c6b3a; font-weight: 600; }
+.tp-down { color: #a3341f; font-weight: 600; }
+.tp-table.tp-wrap { white-space: normal; }
+.tp-table.tp-wrap td { vertical-align: top; min-width: 140px; }
+.tp-ai { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--line); }
+.tp-ai-text { max-width: 74ch; margin-top: 12px; font-family: "Newsreader", Georgia, serif; font-size: 1.04rem; line-height: 1.62; }
+.tp-ai-text h3, .tp-ai-text h4 { margin: 20px 0 6px; font-family: "Schibsted Grotesk", system-ui, sans-serif; font-size: 1rem; font-weight: 600; }
+.tp-ai-text ul { padding-left: 1.2em; }
+.tp-ai-text li { margin-bottom: 5px; }
+@media (max-width: 680px) { .active-territory { position: static; } }

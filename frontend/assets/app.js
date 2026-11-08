@@ -204,8 +204,8 @@ const DIMENSION_LABELS = {
   id_distrito_federal: "Distrito federal", tipo_eleccion: "Elección", partido: "Partido", anio: "Año",
 };
 const ELECTION_LABELS = {
-  DIPUTACION_LOC: "Diputación local", DIP_FEDERAL: "Diputación federal", AYUNTAMIENTO: "Ayuntamiento",
-  PRESIDENCIA: "Presidencia", SENADO: "Senado",
+  DIPUTACION_LOC: "Diputación local", DIPUTACION_FED: "Diputación federal", AYUNTAMIENTO: "Ayuntamiento",
+  PRESIDENTE: "Presidencia", SENADURIA: "Senaduría",
 };
 const METRIC_LABELS = {
   total_votos: "Total de votos", ranking: "Ranking", ganador: "Ganador", comparacion: "Comparación",
@@ -1045,6 +1045,7 @@ function campaignOption(select, rows, label) {
 function renderCampaign() {
   campaignOption(document.querySelector('#task-goal'), campaign.metas, 'Sin meta');
   campaignOption(document.querySelector('#task-person'), campaign.personas, 'Sin responsable');
+  campaignOption(document.querySelector('#task-area'), campaign.areas, 'Sin área');
   campaignOption(document.querySelector('#person-area'), campaign.areas, 'Sin área');
   campaignOption(document.querySelector('#goal-area'), campaign.areas, 'Sin área');
   campaignOption(document.querySelector('#goal-person'), campaign.personas, 'Sin responsable');
@@ -1056,11 +1057,11 @@ function renderCampaign() {
   renderGoalCards();
   const labels = { por_hacer: 'Por hacer', en_proceso: 'En proceso', finalizada: 'Finalizada' };
   document.querySelector('#task-board').innerHTML = Object.entries(labels).map(([status, title]) => {
-    const rows = campaign.tareas.filter(t => t.estado === status);
+    const rows = campaign.tareas.filter(t => t.estado === status && t.etapa === campaignStage() && Number(t.mes) === campaignMonth());
     return `<section class="task-column" data-column="${status}"><h2>${title} <span>${rows.length}</span></h2><div class="task-stack">${rows.map(t => {
       const goal = campaign.metas.find(m => m.id === t.meta_id);
       const person = campaign.personas.find(p => p.id === t.persona_id);
-      return `<article class="task-card priority-${t.prioridad || 'media'}" ${canEdit ? 'draggable="true"' : ''} data-task="${t.id}"><div class="task-card-heading"><strong>${escapeHtml(t.titulo)}</strong><span>${escapeHtml(t.prioridad || 'media')} · ${t.peso || 3} pts</span></div><p>${escapeHtml(t.descripcion || '')}</p><small>${goal ? 'Meta: ' + escapeHtml(goal.titulo) : 'Sin meta'} · ${person ? 'Responsable: ' + escapeHtml(person.nombre) : 'Sin responsable'}${t.fecha_limite ? ' · Hasta: ' + escapeHtml(t.fecha_limite) : ''}${t.evidencia ? ' · Evidencia: ' + escapeHtml(t.evidencia) : ''}</small>${canEdit ? `<div class="task-controls"><select data-state="${t.id}" aria-label="Estado de ${escapeHtml(t.titulo)}">${Object.entries(labels).map(([code, name]) => `<option value="${code}" ${code === status ? 'selected' : ''}>${name}</option>`).join('')}</select><button class="text-button" data-delete="tareas" data-id="${t.id}" aria-label="Eliminar tarea">Eliminar</button></div>` : ''}</article>`;
+      return `<article class="task-card priority-${t.prioridad || 'media'}" ${canEdit ? 'draggable="true"' : ''} data-task="${t.id}"><div class="task-card-heading"><strong>${escapeHtml(t.titulo)}</strong><span>${escapeHtml(t.prioridad || 'media')} · ${t.peso || 3} pts</span></div><p>${escapeHtml(t.descripcion || '')}</p><small>${goal ? 'Meta: ' + escapeHtml(goal.titulo) : 'Sin meta'} · ${person ? 'Responsable: ' + escapeHtml(person.nombre) : 'Sin responsable'}${t.fecha_limite ? ' · Hasta: ' + escapeHtml(t.fecha_limite) : ''}${t.evidencia ? ' · Evidencia: ' + escapeHtml(t.evidencia) : ''}</small>${canEdit ? `<div class="task-controls"><select data-task-area="${t.id}" aria-label="Área de tarea"><option value="">Sin área</option>${campaign.areas.map(a => `<option value="${a.id}" ${a.id === t.area_id ? 'selected' : ''}>${escapeHtml(a.nombre)}</option>`).join('')}</select><select data-state="${t.id}" aria-label="Estado de ${escapeHtml(t.titulo)}">${Object.entries(labels).map(([code, name]) => `<option value="${code}" ${code === status ? 'selected' : ''}>${name}</option>`).join('')}</select><button class="text-button" data-delete="tareas" data-id="${t.id}" aria-label="Eliminar tarea">Eliminar</button></div>` : ''}</article>`;
     }).join('') || '<p class="task-empty">Suelta una tarea aquí</p>'}</div></section>`;
   }).join('');
   renderCampaignDashboard();
@@ -1083,7 +1084,7 @@ function goalTerritoryLink(goal) {
 }
 function renderGoalCards() {
   const canEdit = hasRole('coordinador');
-  document.querySelector('#goal-cards').innerHTML = campaign.metas.map(goal => {
+  document.querySelector('#goal-cards').innerHTML = campaign.metas.filter(goal => goal.etapa === campaignStage() && Number(goal.mes) === campaignMonth()).map(goal => {
     const p = goalProgress(goal);
     const person = campaign.personas.find(x => x.id === goal.responsable_id);
     const editor = canEdit && Number(goal.objetivo) > 0
@@ -1107,11 +1108,11 @@ function progressRow(name, done, total, extra = '') {
   return `<div class="progress-row"><div><strong>${escapeHtml(name)}</strong><span>${done}/${total} finalizadas ${extra}</span></div><b>${percent}%</b><div class="progress-track"><i style="width:${percent}%"></i></div></div>`;
 }
 function renderCampaignDashboard() {
-  const tasks = campaign.tareas; const today = new Date().toISOString().slice(0, 10);
+  const tasks = campaign.tareas.filter(t => t.etapa === campaignStage() && Number(t.mes) === campaignMonth()); const today = new Date().toISOString().slice(0, 10);
   const count = state => tasks.filter(t => t.estado === state).length;
   const overdue = tasks.filter(t => t.estado !== 'finalizada' && t.fecha_limite && t.fecha_limite < today).length;
-  document.querySelector('#campaign-kpis').innerHTML = metricCard('Metas activas', campaign.metas.length) + metricCard('Por empezar', count('por_hacer')) + metricCard('En proceso', count('en_proceso'), 'blue') + metricCard('Finalizadas', count('finalizada'), 'green') + metricCard('Vencidas', overdue, overdue ? 'red' : '');
-  document.querySelector('#goal-progress').innerHTML = campaign.metas.map(g => {
+  document.querySelector('#campaign-kpis').innerHTML = metricCard('Metas activas', campaign.metas.filter(g => g.etapa === campaignStage() && Number(g.mes) === campaignMonth()).length) + metricCard('Por empezar', count('por_hacer')) + metricCard('En proceso', count('en_proceso'), 'blue') + metricCard('Finalizadas', count('finalizada'), 'green') + metricCard('Vencidas', overdue, overdue ? 'red' : '');
+  document.querySelector('#goal-progress').innerHTML = campaign.metas.filter(g => g.etapa === campaignStage() && Number(g.mes) === campaignMonth()).map(g => {
     const p = goalProgress(g);
     return `<div class="progress-row"><div><strong>${escapeHtml(g.titulo)}</strong><span>${escapeHtml(p.label)}${g.fecha_limite ? ` · vence ${escapeHtml(g.fecha_limite)}` : ''}</span></div><b>${p.percent}%</b><div class="progress-track"><i style="width:${p.percent}%"></i></div></div>`;
   }).join('') || '<p class="empty-dashboard">Aún no hay metas.</p>';
@@ -1123,12 +1124,27 @@ function renderCampaignDashboard() {
   campaign.metas.filter(g => !tasks.some(t => t.meta_id === g.id)).forEach(g => alerts.push(`Meta sin tareas: ${g.titulo}`));
   document.querySelector('#campaign-alerts').innerHTML = alerts.slice(0, 10).map(a => `<p class="campaign-alert">${escapeHtml(a)}</p>`).join('') || '<p class="campaign-ok">No hay alertas operativas.</p>';
 }
+const campaignStage = () => document.querySelector('#campaign-stage').value;
+const campaignMonth = () => Number(document.querySelector('#campaign-month').value);
+['#campaign-stage', '#campaign-month'].forEach(sel => document.querySelector(sel).addEventListener('change', () => { if (campaign) renderCampaign(); }));
+document.querySelector('#campania').addEventListener('change', async event => {
+  const select = event.target.closest('[data-task-area]');
+  if (!select) return;
+  try {
+    await campaignRequest(`/tareas/${select.dataset.taskArea}/organizacion`, {
+      method: 'PATCH', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({area_id: select.value ? Number(select.value) : null})
+    });
+    await loadCampaign(); campaignStatus.textContent = 'Área de tarea actualizada.';
+  } catch (error) { campaignStatus.textContent = error.message; await loadCampaign(); }
+});
 for (const [id, key] of [['#area-form', 'areas'], ['#goal-form', 'metas'], ['#person-form', 'personas'], ['#task-form', 'tareas']]) {
   document.querySelector(id).addEventListener('submit', async event => {
     event.preventDefault();
     const form = event.currentTarget;
     const values = Object.fromEntries(new FormData(form));
     ['meta_id', 'persona_id', 'responsable_id', 'area_id'].forEach(field => { if (field in values) values[field] = values[field] ? Number(values[field]) : null; });
+    if (key === 'metas' || key === 'tareas') { values.etapa = campaignStage(); values.mes = campaignMonth(); }
     if (key === 'metas') {
       values.objetivo = values.objetivo ? Number(values.objetivo) : null; values.fecha_limite ||= null;
       values.territorio_valor = (values.territorio_valor || '').trim() || null;
@@ -1193,5 +1209,24 @@ document.querySelector('#task-board').addEventListener('drop', event => {
       list.innerHTML = (level?.unidades || []).map(unit => `<option value="${escapeHtml(unit)}"></option>`).join('');
     } catch { /* las sugerencias son opcionales */ }
   });
+
+  // Territorio activo: la meta nueva nace ligada a él, salvo que la persona ya haya escrito otro.
+  const value = document.querySelector('#goal-territory-value');
+  const goalForm = document.querySelector('#goal-form');
+  let applied = null;
+  function applyActiveToGoal() {
+    const active = window.TerritorioActivo?.get();
+    if (!active) return;
+    const key = `${active.nivel}|${active.unidad}`;
+    const untouched = (!type.value && !value.value) || (applied && type.value === applied.nivel && value.value === applied.unidad);
+    if (!untouched || (applied && applied.key === key && value.value)) return;
+    type.value = active.nivel;
+    type.dispatchEvent(new Event('change'));
+    value.value = String(active.unidad);
+    applied = { key, nivel: active.nivel, unidad: String(active.unidad) };
+  }
+  goalForm.addEventListener('reset', () => { applied = null; setTimeout(applyActiveToGoal, 0); });
+  document.addEventListener('tab:changed', (event) => { if (event.detail === 'campania') applyActiveToGoal(); });
+  document.addEventListener('territorio:activo', () => { if (document.querySelector('.tab.active')?.dataset.tab === 'campania') applyActiveToGoal(); });
 })();
 document.addEventListener('demo:changed', () => loadCampaign());

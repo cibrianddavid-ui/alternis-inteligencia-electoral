@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plan de Mejoría Estratégica: Transformación a Modelo SaaS B2B - Inteligencia Electoral</title>
+  <style>
+    :root {
+      --navy-950: #070c18;
+      --navy-900: #0b1324;
+      --navy-850: #0f1a30;
+      --navy-800: #15223e;
+      --navy-700: #1c2e52;
+      --slate-600: #475569;
+      --slate-500: #64748b;
+      --slate-400: #94a3b8;
+      --slate-300: #cbd5e1;
+      --slate-100: #f1f5f9;
+      --slate-50: #f8fafc;
+      --white: #ffffff;
+      --primary: #2563eb;
+      --primary-light: #3b82f6;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #ef4444;
+      --purple: #8b5cf6;
+      --cyan: #06b6d4;
+      --border: #e2e8f0;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--slate-50);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding-bottom: 90px;
+    }
+
+    /* Hero Ejecutivo */
+    header.hero {
+      background: linear-gradient(135deg, var(--navy-950) 0%, var(--navy-900) 50%, var(--navy-800) 100%);
+      color: var(--white);
+      padding: 55px 24px 45px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .hero-container {
+      max-width: 1240px;
+      margin: 0 auto;
+    }
+
+    .tag-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .tag {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--slate-300);
+    }
+
+    .tag.primary { background: rgba(37, 99, 235, 0.25); color: #bfdbfe; border-color: rgba(59, 130, 246, 0.4); }
+    .tag.emerald { background: rgba(16, 185, 129, 0.25); color: #a7f3d0; border-color: rgba(16, 185, 129, 0.4); }
+    .tag.amber { background: rgba(245, 158, 11, 0.25); color: #fde68a; border-color: rgba(245, 158, 11, 0.4); }
+    .tag.purple { background: rgba(139, 92, 246, 0.25); color: #ddd6fe; border-color: rgba(139, 92, 246, 0.4); }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+
+    .hero-lead {
+      font-size: 1.18rem;
+      color: var(--slate-300);
+      max-width: 900px;
+      margin-bottom: 24px;
+    }
+
+    .meta-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 16px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      font-size: 0.86rem;
+    }
+
+    .meta-box strong {
+      display: block;
+      color: var(--slate-400);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 2px;
+    }
+
+    .meta-box span {
+      color: var(--white);
+      font-weight: 600;
+    }
+
+    /* Contenedor */
+    .container {
+      max-width: 1240px;
+      margin: -24px auto 0;
+      padding: 0 24px;
+    }
+
+    /* Sticky Nav */
+    .nav-bar {
+      position: sticky;
+      top: 14px;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 16px;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+      margin-bottom: 30px;
+    }
+
+    .nav-bar a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 6px;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .nav-bar a:hover {
+      background: var(--slate-100);
+      color: var(--navy-900);
+    }
+
+    /* Tarjetas y Secciones */
+    section.doc-section {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 34px;
+      margin-bottom: 28px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.025);
+    }
+
+    h2.section-heading {
+      font-size: 1.55rem;
+      font-weight: 800;
+      color: var(--navy-900);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 2px solid var(--slate-100);
+    }
+
+    h3.sub-heading {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--navy-800);
+      margin: 24px 0 12px 0;
+    }
+
+    p {
+      margin-bottom: 14px;
+      color: #334155;
+    }
+
+    /* Grids */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 22px;
+      margin-top: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+      margin-top: 16px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .card {
+      background: var(--slate-50);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 22px;
+    }
+
+    .card.blue-card { background: #eff6ff; border-color: #bfdbfe; }
+    .card.green-card { background: #f0fdf4; border-color: #bbf7d0; }
+    .card.amber-card { background: #fffbeb; border-color: #fde68a; }
+    .card.purple-card { background: #f5f3ff; border-color: #ddd6fe; }
+    .card.red-card { background: #fef2f2; border-color: #fecaca; }
+
+    .card-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--navy-900);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Tablas */
+    .table-responsive {
+      overflow-x: auto;
+      margin: 18px 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      text-align: left;
+    }
+
+    th {
+      background: var(--slate-100);
+      color: var(--navy-900);
+      font-weight: 700;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+      color: #334155;
+      vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background-color: #f8fafc; }
+
+    .badge-pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .badge-pill.red { background: #fee2e2; color: #b91c1c; }
+    .badge-pill.green { background: #dcfce7; color: #15803d; }
+    .badge-pill.blue { background: #dbeafe; color: #1d4ed8; }
+    .badge-pill.amber { background: #fef3c7; color: #b45309; }
+
+    /* Callouts */
+    .callout {
+      border-left: 4px solid;
+      padding: 16px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 18px 0;
+    }
+
+    .callout.danger { border-color: var(--rose); background: #fef2f2; color: #991b1b; }
+    .callout.warning { border-color: var(--amber); background: #fffbeb; color: #92400e; }
+    .callout.info { border-color: var(--primary); background: #eff6ff; color: #1e40af; }
+    .callout.success { border-color: var(--emerald); background: #f0fdf4; color: #166534; }
+    .callout strong { display: block; margin-bottom: 4px; }
+
+    ul, ol {
+      margin-left: 20px;
+      margin-bottom: 16px;
+      color: #334155;
+    }
+    li { margin-bottom: 6px; }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background: var(--slate-100);
+      color: var(--navy-900);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+
+    footer {
+      text-align: center;
+      padding: 45px 0 20px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HERO SECTION -->
+  <header class="hero">
+    <div class="hero-container">
+      <div class="tag-bar">
+        <span class="tag primary">Estrategia de Producto</span>
+        <span class="tag emerald">Modelo SaaS B2B</span>
+        <span class="tag amber">Arquitectura Multi-Tenant</span>
+        <span class="tag purple">Documento Ejecutivo</span>
+      </div>
+      <h1>Plan de Transformación a Modelo SaaS por Suscripción</h1>
+      <p class="hero-lead">
+        Hoja de ruta estratégica, técnica y comercial para evolucionar la Plataforma de Inteligencia Electoral
+        de una aplicación local de una sola campaña a un servicio cloud escalable, seguro y rentable para candidatos,
+        partidos políticos y consultores.
+      </p>
+      <div class="meta-strip">
+        <div class="meta-box">
+          <strong>Tipo de Documento</strong>
+          <span>Propuesta de Arquitectura & Roadmap</span>
+        </div>
+        <div class="meta-box">
+          <strong>Modelo de Negocio</strong>
+          <span>SaaS B2B Recurrente (Stripe / MP)</span>
+        </div>
+        <div class="meta-box">
+          <strong>Enfoque Técnico</strong>
+          <span>Multi-Tenancy, Metering & Cloud Ready</span>
+        </div>
+        <div class="meta-box">
+          <strong>Destinatarios</strong>
+          <span>Equipo Directivo, Producto e Ingeniería</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="container">
+
+    <!-- NAVEGACIÓN PEGAJOSA -->
+    <nav class="nav-bar">
+      <a href="#vision">1. Visión & Oportunidad</a>
+      <a href="#que-y-por-que">2. Qué Cambia y Por Qué</a>
+      <a href="#arquitectura-saas">3. Arquitectura SaaS</a>
+      <a href="#flujo-proceso">4. Flujos del Proceso</a>
+      <a href="#monetizacion">5. Modelo de Precios</a>
+      <a href="#seguridad">6. Seguridad & Compliance</a>
+      <a href="#roadmap">7. Hoja de Ruta</a>
+    </nav>
+
+    <!-- SECCIÓN 1: VISIÓN GENERAL Y OPORTUNIDAD -->
+    <section id="vision" class="doc-section">
+      <h2 class="section-heading">
+        <span>🎯</span> 1. Visión General y Oportunidad de Negocio
+      </h2>
+      <p>
+        La plataforma actual posee un núcleo técnico sólido: su <strong>asistente determinista</strong> traduce lenguaje natural a planes JSON
+        y ejecuta cálculos exactos con Pandas, eliminando el riesgo de alucinación de datos electorales. Asimismo, la <strong>verificación de cifras en discursos</strong>
+        es una patente competitiva de alto valor.
+      </p>
+      <p>
+        Sin embargo, la arquitectura actual fue diseñada como una <strong>herramienta local para una sola campaña</strong>. Para venderse como un
+        <strong>Software as a Service (SaaS) comercial recurrente</strong>, debe transformarse para resolver tres retos fundamentales:
+      </p>
+
+      <div class="grid-3">
+        <div class="card blue-card">
+          <div class="card-title">
+            <span>Aislamiento Absoluto</span>
+            <span>🔒</span>
+          </div>
+          <p>
+            En el ámbito político, dos candidatos opositores jamás pueden compartir base de datos. Una filtración de metas, discursos o brigadistas destruiría la reputación de la empresa.
+          </p>
+        </div>
+
+        <div class="card amber-card">
+          <div class="card-title">
+            <span>Margen Financiero</span>
+            <span>💳</span>
+          </div>
+          <p>
+            Las APIs de Groq (tokens de LLM) y SerpAPI (búsquedas de prensa) tienen costo por uso. Si un cliente consume indiscriminadamente sin cuota, el costo de las APIs superará el valor de la suscripción.
+          </p>
+        </div>
+
+        <div class="card green-card">
+          <div class="card-title">
+            <span>Escalabilidad Concurrente</span>
+            <span>⚡</span>
+          </div>
+          <p>
+            SQLite en disco local no soporta cientos de usuarios concurrentes en periodos electorales álgidos. Se requiere infraestructura cloud con alta disponibilidad y balanceo.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 2: QUÉ CAMBIARÍA Y POR QUÉ SE CAMBIARÍA -->
+    <section id="que-y-por-que" class="doc-section">
+      <h2 class="section-heading">
+        <span>🔄</span> 2. Matriz de Cambios: Qué Cambiaría y Por Qué
+      </h2>
+      <p>
+        A continuación se detalla cada componente funcional, contrastando el estado actual con la solución propuesta y su justificación técnica y de negocio:
+      </p>
+
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Componente</th>
+              <th>Estado Actual</th>
+              <th>Cambio Propuesto (SaaS)</th>
+              <th>¿Por qué se cambia? (Justificación)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1. Aislamiento de Clientes</strong></td>
+              <td><span class="badge-pill red">Mono-inquilino</span><br/>Una sola base de datos de campaña y usuarios para todo el servidor.</td>
+              <td><span class="badge-pill green">Multi-Tenant (Workspaces)</span><br/>Entidad <code>Organización</code> con aislamiento estricto por <code>tenant_id</code> o esquema/base independiente.</td>
+              <td><strong>Riesgo crítico de fuga de información política:</strong> Múltiples campañas rivales o agencias con varios clientes deben operar en la misma plataforma sin ver jamás la información del otro.</td>
+            </tr>
+            <tr>
+              <td><strong>2. Motor de Base de Datos</strong></td>
+              <td><span class="badge-pill amber">3x SQLite locales</span><br/>Archivos <code>electoral.db</code>, <code>campania.db</code>, <code>plataforma.db</code> en disco.</td>
+              <td><span class="badge-pill green">PostgreSQL + Redis</span><br/>PostgreSQL administrado para persistencia relacional con RLS; Redis para sesiones y caché.</td>
+              <td><strong>Concurrencia y bloqueos:</strong> SQLite sufre bloqueos en escrituras masivas simultáneas (<code>database is locked</code>). PostgreSQL permite cientos de usuarios concurrentes y respaldos en caliente.</td>
+            </tr>
+            <tr>
+              <td><strong>3. Facturación & Cuotas de IA</strong></td>
+              <td><span class="badge-pill red">Sin facturación ni límites</span><br/>Llamadas libres a Groq y SerpAPI sin medición por usuario.</td>
+              <td><span class="badge-pill green">Metering & Stripe/Mercado Pago</span><br/>Suscripciones automáticas y límites de consumo mensual (tokens/búsquedas) por plan.</td>
+              <td><strong>Protección del margen de ganancia:</strong> Evita que usuarios abusivos generen costos de API que superen el valor pagado por su suscripción. Permite vender paquetes de recarga (*add-ons*).</td>
+            </tr>
+            <tr>
+              <td><strong>4. Alcance Geográfico</strong></td>
+              <td><span class="badge-pill amber">Solo SLP 2024</span><br/>Datos electorales limitados a San Luis Potosí y a una sola elección histórica.</td>
+              <td><span class="badge-pill green">Multi-Estado & Histórico INE</span><br/>Pipeline ETL para cargar cómputos distritales de los 32 estados y elecciones 2018, 2021, 2024.</td>
+              <td><strong>Multiplicación del mercado por 32:</strong> Permite comercializar en todo México y habilita el verdadero potencial de las gráficas de evolución temporal y voto diferenciado.</td>
+            </tr>
+            <tr>
+              <td><strong>5. Cartografía Electoral</strong></td>
+              <td><span class="badge-pill red">Placeholder estático</span><br/>Sección pendiente con aviso de archivos no disponibles.</td>
+              <td><span class="badge-pill green">Mapas GIS Interactivos</span><br/>Integración de <strong>MapLibre GL / Leaflet</strong> con capas GeoJSON de secciones y distritos.</td>
+              <td><strong>Diferenciador visual más cotizado:</strong> Los estrategas electorales pagan por ver visualmente sus secciones reñidas (*swing*), márgenes de victoria y zonas de brigadeo en un mapa interactivo.</td>
+            </tr>
+            <tr>
+              <td><strong>6. Experiencia Móvil</strong></td>
+              <td><span class="badge-pill amber">Desktop-centric</span><br/>En smartphones no se despliega el menú de usuario ni el panel de control completo.</td>
+              <td><span class="badge-pill green">PWA (Progressive Web App)</span><br/>Diseño 100% responsivo instalable en iOS y Android con integración a WhatsApp.</td>
+              <td><strong>Campaña en territorio:</strong> Los candidatos y coordinadores de zona pasan el 80% del día en la calle. Necesitan consultar el perfil y tareas en tiempo real desde el celular.</td>
+            </tr>
+            <tr>
+              <td><strong>7. Seguridad y Acceso</strong></td>
+              <td><span class="badge-pill amber">Usuario y contraseña</span><br/>Autenticación básica scrypt con rate-limiting en memoria RAM.</td>
+              <td><span class="badge-pill green">2FA (TOTP) & Auditoría</span><br/>Autenticación de doble factor obligatoria y bitácora inmutable de eventos (*Audit Logs*).</td>
+              <td><strong>Objetivo de hackeo político:</strong> Las cuentas de campaña son blanco de ataques. El 2FA evita accesos no autorizados y el registro de auditoría detecta filtraciones internas de datos.</td>
+            </tr>
+            <tr>
+              <td><strong>8. Marca Blanca (White-Label)</strong></td>
+              <td><span class="badge-pill amber">Marca fija Alternis / IE</span><br/>Logotipos y membretes estáticos en los reportes generados.</td>
+              <td><span class="badge-pill green">Personalización para Agencias</span><br/>Subida de logotipo y colores corporativos de la consultora en los informes PDF/Word.</td>
+              <td><strong>Palanca de precio Enterprise:</strong> Permite cobrar tarifas más elevadas a agencias que revenden el software a sus clientes con su propia identidad visual.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 3: ARQUITECTURA SAAS PROPUESTA -->
+    <section id="arquitectura-saas" class="doc-section">
+      <h2 class="section-heading">
+        <span>🏛️</span> 3. Arquitectura Propuesta para SaaS Multi-Tenant
+      </h2>
+      <p>
+        Para soportar múltiples organizaciones con alta disponibilidad, la infraestructura debe desacoplar el estado en memoria,
+        incorporar middleware de cuotas y apoyarse en bases de datos gestionadas:
+      </p>
+
+      <!-- DIAGRAMA DE ARQUITECTURA SAAS EN SVG -->
+      <div style="width: 100%; overflow-x: auto; background: #070d18; border-radius: 12px; border: 1px solid #1e293b; padding: 22px 10px; margin: 24px 0;">
+        <svg viewBox="0 0 1150 720" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <defs>
+            <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.45"/>
+            </filter>
+            <marker id="saas-arr-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#38bdf8"/>
+            </marker>
+            <marker id="saas-arr-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#34d399"/>
+            </marker>
+            <marker id="saas-arr-amber" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#fbbf24"/>
+            </marker>
+            <marker id="saas-arr-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#c084fc"/>
+            </marker>
+          </defs>
+
+          <!-- 1. CAPA CLIENTES -->
+          <rect x="30" y="20" width="1090" height="70" rx="10" fill="#0f172a" stroke="#334155" stroke-width="1.5" filter="url(#glow)"/>
+          <text x="575" y="44" fill="#f8fafc" font-size="14" font-weight="800" text-anchor="middle">CAPA DE CLIENTES MULTI-DISPOSITIVO (WEB RESPONSIVE & PWA MÓVIL)</text>
+          <text x="220" y="68" fill="#93c5fd" font-size="12" text-anchor="middle">💻 Campaña A (Candidato Alcaldía)</text>
+          <text x="575" y="68" fill="#a7f3d0" font-size="12" text-anchor="middle">📱 Brigadistas en Territorio (PWA Offline)</text>
+          <text x="930" y="68" fill="#fde68a" font-size="12" text-anchor="middle">🏢 Agencia de Consultoría (Multi-Campaña)</text>
+
+          <!-- Flecha Clientes -> Cloudflare -->
+          <line x1="575" y1="90" x2="575" y2="120" stroke="#38bdf8" stroke-width="2" marker-end="url(#saas-arr-blue)"/>
+
+          <!-- 2. CAPA BORDE (CLOUDFLARE / INGRESS) -->
+          <rect x="250" y="120" width="650" height="60" rx="8" fill="#1e1b4b" stroke="#6366f1" stroke-width="1.5" filter="url(#glow)"/>
+          <text x="575" y="145" fill="#e0e7ff" font-size="13" font-weight="700" text-anchor="middle">🛡️ Borde de Red: Cloudflare / AWS CloudFront + WAF + Ingress</text>
+          <text x="575" y="163" fill="#c7d2fe" font-size="11" text-anchor="middle">SSL/TLS 1.3 Forzado · Mitigación DDoS · Rate Limiting Global · Caché Estático</text>
+
+          <!-- Flecha Ingress -> FastAPI Cluster -->
+          <line x1="575" y1="180" x2="575" y2="215" stroke="#38bdf8" stroke-width="2" marker-end="url(#saas-arr-blue)"/>
+
+          <!-- 3. CLUSTER BACKEND FASTAPI (STATELESS) -->
+          <rect x="30" y="215" width="1090" height="150" rx="10" fill="#0f172a" stroke="#2563eb" stroke-width="2" filter="url(#glow)"/>
+          <text x="575" y="240" fill="#93c5fd" font-size="14" font-weight="800" text-anchor="middle">CLUSTER FASTAPI API REST (CONTENEDORES DOCKER STATELESS)</text>
+
+          <!-- Subcomponentes Backend -->
+          <rect x="50" y="255" width="230" height="90" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="1.2"/>
+          <text x="165" y="278" fill="#60a5fa" font-size="12" font-weight="700" text-anchor="middle">TenantMiddleware</text>
+          <text x="165" y="296" fill="#cbd5e1" font-size="10.5" text-anchor="middle">Extrae Tenant ID del Token/Subdominio</text>
+          <text x="165" y="312" fill="#94a3b8" font-size="10" text-anchor="middle">Aísla el contexto de datos</text>
+          <text x="165" y="328" fill="#a7f3d0" font-size="9.5" text-anchor="middle">2FA TOTP Validation</text>
+
+          <rect x="300" y="255" width="230" height="90" rx="8" fill="#1e293b" stroke="#f59e0b" stroke-width="1.2"/>
+          <text x="415" y="278" fill="#fbbf24" font-size="12" font-weight="700" text-anchor="middle">Billing & Quota Meter</text>
+          <text x="415" y="296" fill="#cbd5e1" font-size="10.5" text-anchor="middle">Verifica saldo en Stripe / Redis</text>
+          <text x="415" y="312" fill="#94a3b8" font-size="10" text-anchor="middle">Control de límites Groq / SerpAPI</text>
+          <text x="415" y="328" fill="#fde68a" font-size="9.5" text-anchor="middle">Bloquea si excede cuota mensual</text>
+
+          <rect x="550" y="255" width="250" height="90" rx="8" fill="#1e293b" stroke="#10b981" stroke-width="1.2"/>
+          <text x="675" y="278" fill="#34d399" font-size="12" font-weight="700" text-anchor="middle">Motores Deterministas</text>
+          <text x="675" y="296" fill="#cbd5e1" font-size="10.5" text-anchor="middle">Asistente (RapidFuzz + SQL Seguro)</text>
+          <text x="675" y="312" fill="#94a3b8" font-size="10" text-anchor="middle">Territorio (Pandas) & Auditoría Regex</text>
+          <text x="675" y="328" fill="#6ee7b7" font-size="9.5" text-anchor="middle">Servicio GIS GeoJSON (MapLibre)</text>
+
+          <rect x="820" y="255" width="280" height="90" rx="8" fill="#1e293b" stroke="#ec4899" stroke-width="1.2"/>
+          <text x="960" y="278" fill="#f472b6" font-size="12" font-weight="700" text-anchor="middle">Generador de Documentos</text>
+          <text x="960" y="296" fill="#cbd5e1" font-size="10.5" text-anchor="middle">ReportLab PDF & Python-docx</text>
+          <text x="960" y="312" fill="#94a3b8" font-size="10" text-anchor="middle">Soporte White-Label (Logo Agencia)</text>
+          <text x="960" y="328" fill="#fbcfe8" font-size="9.5" text-anchor="middle">Subida a Storage S3 / Cloudflare R2</text>
+
+          <!-- Flechas Backend -> Datos & Externos -->
+          <line x1="200" y1="365" x2="200" y2="420" stroke="#c084fc" stroke-width="2" marker-end="url(#saas-arr-purple)"/>
+          <line x1="450" y1="365" x2="450" y2="420" stroke="#34d399" stroke-width="2" marker-end="url(#saas-arr-green)"/>
+          <line x1="750" y1="365" x2="750" y2="420" stroke="#38bdf8" stroke-width="2" marker-end="url(#saas-arr-blue)"/>
+          <line x1="1000" y1="365" x2="1000" y2="420" stroke="#fbbf24" stroke-width="2" marker-end="url(#saas-arr-amber)"/>
+
+          <!-- 4. CAPA DE PERSISTENCIA Y SERVICIOS GESTIONADOS -->
+          <rect x="30" y="420" width="670" height="150" rx="10" fill="#0f172a" stroke="#10b981" stroke-width="1.8" filter="url(#glow)"/>
+          <text x="365" y="445" fill="#6ee7b7" font-size="14" font-weight="800" text-anchor="middle">CAPA DE DATOS MULTI-TENANT CLOUD</text>
+
+          <rect x="50" y="460" width="290" height="95" rx="8" fill="#064e3b" stroke="#34d399" stroke-width="1"/>
+          <text x="195" y="482" fill="#ffffff" font-size="12" font-weight="700" text-anchor="middle">🐘 PostgreSQL Gestionado (RDS/Neon)</text>
+          <text x="195" y="500" fill="#a7f3d0" font-size="10.5" text-anchor="middle">Row-Level Security (RLS) por tenant_id</text>
+          <text x="195" y="516" fill="#d1fae5" font-size="10" text-anchor="middle">Usuarios, Campañas, Metas, Tareas y Auditoría</text>
+          <text x="195" y="534" fill="#6ee7b7" font-size="9.5" text-anchor="middle">Respaldos continuos Point-In-Time</text>
+
+          <rect x="365" y="460" width="160" height="95" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="1"/>
+          <text x="445" y="482" fill="#f87171" font-size="12" font-weight="700" text-anchor="middle">⚡ Redis Cluster</text>
+          <text x="445" y="500" fill="#cbd5e1" font-size="10.5" text-anchor="middle">Tokens de Sesión</text>
+          <text x="445" y="516" fill="#94a3b8" font-size="10" text-anchor="middle">Caché Noticias / SerpAPI</text>
+          <text x="445" y="534" fill="#fca5a5" font-size="9.5" text-anchor="middle">Rate Limiter Distribuido</text>
+
+          <rect x="540" y="460" width="145" height="95" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1"/>
+          <text x="612" y="482" fill="#38bdf8" font-size="12" font-weight="700" text-anchor="middle">📦 S3 / Cloud R2</text>
+          <text x="612" y="500" fill="#cbd5e1" font-size="10.5" text-anchor="middle">Archivos GeoJSON</text>
+          <text x="612" y="516" fill="#94a3b8" font-size="10" text-anchor="middle">PDFs & DOCX</text>
+          <text x="612" y="534" fill="#7dd3fc" font-size="9.5" text-anchor="middle">Enlaces Prefirmados</text>
+
+          <!-- 5. CAPA SERVICIOS EXTERNOS & IA -->
+          <rect x="730" y="420" width="390" height="150" rx="10" fill="#0f172a" stroke="#f59e0b" stroke-width="1.8" filter="url(#glow)"/>
+          <text x="925" y="445" fill="#fde68a" font-size="14" font-weight="800" text-anchor="middle">SERVICIOS DE TERCEROS AUDITADOS</text>
+
+          <rect x="750" y="460" width="165" height="95" rx="8" fill="#1e293b" stroke="#f59e0b" stroke-width="1"/>
+          <text x="832" y="482" fill="#fbbf24" font-size="12" font-weight="700" text-anchor="middle">💳 Stripe / MP</text>
+          <text x="832" y="500" fill="#cbd5e1" font-size="10.5" text-anchor="middle">Webhooks de Cobro</text>
+          <text x="832" y="516" fill="#94a3b8" font-size="10" text-anchor="middle">Suscripción Mensual</text>
+          <text x="832" y="534" fill="#fde68a" font-size="9.5" text-anchor="middle">Facturación CFDI (México)</text>
+
+          <rect x="930" y="460" width="175" height="95" rx="8" fill="#1e293b" stroke="#38bdf8" stroke-width="1"/>
+          <text x="1017" y="482" fill="#38bdf8" font-size="12" font-weight="700" text-anchor="middle">🤖 Groq & SerpAPI</text>
+          <text x="1017" y="500" fill="#cbd5e1" font-size="10.5" text-anchor="middle">Inferencia LLM Segura</text>
+          <text x="1017" y="516" fill="#94a3b8" font-size="10" text-anchor="middle">Google News Scraping</text>
+          <text x="1017" y="534" fill="#bae6fd" font-size="9.5" text-anchor="middle">Consumo auditado por Tenant</text>
+
+          <!-- 6. PIE: SEGURIDAD Y COMPLIANCE -->
+          <rect x="30" y="600" width="1090" height="70" rx="8" fill="#111827" stroke="#374151" stroke-width="1.2"/>
+          <text x="575" y="628" fill="#f8fafc" font-size="12.5" font-weight="700" text-anchor="middle">GARANTÍAS DE CONFIANZA POLÍTICA & COMPLIANCE</text>
+          <text x="575" y="648" fill="#9ca3af" font-size="11" text-anchor="middle">Aislamiento criptográfico · Cifrado en reposo (AES-256) · Bitácora inmutable de accesos · Cumplimiento LFPDPPP (Datos Personales)</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 4: FLUJOS DEL PROCESO CON LOS CAMBIOS -->
+    <section id="flujo-proceso" class="doc-section">
+      <h2 class="section-heading">
+        <span>🔄</span> 4. Flujos del Proceso con los Cambios
+      </h2>
+      <p>
+        El modelo SaaS introduce dos flujos críticos ausentes en la versión mono-inquilino actual:
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">
+            <span>Flujo A: Registro, Facturación & Onboarding</span>
+            <span>💳</span>
+          </div>
+          <ol style="margin-left: 18px; font-size: 0.9rem;">
+            <li><strong>Landing Page:</strong> El cliente selecciona un plan (ej. <em>Campaña Municipal</em>).</li>
+            <li><strong>Checkout (Stripe):</strong> Ingresa método de pago ➔ Se procesa el cargo recurrente ➔ Stripe dispara webhook exitoso.</li>
+            <li><strong>Aprovisionamiento Automático:</strong> El backend crea la <code>Organización</code>, asigna el primer usuario con rol <code>SuperAdmin de Campaña</code> y emite los créditos del mes.</li>
+            <li><strong>Invitación de Equipo:</strong> El administrador genera enlaces con expiración para que su coordinador de prensa y brigadistas se registren con permisos restringidos.</li>
+            <li><strong>Tour Guiado Inicial:</strong> Se activa el recorrido interactivo adaptado al plan adquirido.</li>
+          </ol>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Flujo B: Medición de Cuota y Consumo de IA</span>
+            <span>⚡</span>
+          </div>
+          <ol style="margin-left: 18px; font-size: 0.9rem;">
+            <li><strong>Petición:</strong> Usuario solicita redactar un discurso o buscar notas en el Semáforo.</li>
+            <li><strong>Validación de Saldo:</strong> <code>BillingMiddleware</code> consulta en Redis los créditos restantes de la organización en el mes actual.</li>
+            <li><strong>Bifurcación:</strong>
+              <ul>
+                <li><em>Si tiene saldo:</em> Se ejecuta la llamada a Groq o SerpAPI, se descuentan los créditos y se entrega la respuesta.</li>
+                <li><em>Si se agotó la cuota:</em> Se responde con un código <code>402 Payment Required</code> y una modal para adquirir un paquete extra (*Add-on de 50 consultas*) o subir de tier.</li>
+              </ul>
+            </li>
+            <li><strong>Caché Compartido:</strong> Si la búsqueda periodística ya se realizó en los últimos 3 días para esa misma persona, se sirve desde Redis sin gastar crédito de API externa.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 5: MODELO DE MONETIZACIÓN -->
+    <section id="monetizacion" class="doc-section">
+      <h2 class="section-heading">
+        <span>💰</span> 5. Modelo de Monetización y Tiers Sugeridos
+      </h2>
+      <p>
+        Estructura de precios escalonada recomendada para el mercado político electoral en México y América Latina:
+      </p>
+
+      <div class="grid-3">
+        <!-- PLAN 1 -->
+        <div class="card">
+          <div class="card-title">
+            <span>Local / Diputación</span>
+            <span class="badge-pill blue">Tier 1</span>
+          </div>
+          <h3 style="font-size: 1.8rem; font-weight: 800; color: var(--navy-900); margin: 10px 0;">$2,490 <small style="font-size: 0.9rem; color: var(--slate-500); font-weight: 500;">MXN/mes</small></h3>
+          <p style="font-size: 0.85rem; color: var(--slate-600);">Ideal para candidatos a diputaciones locales, sindicaturas o regidurías.</p>
+          <hr style="border: 0; border-top: 1px solid var(--border); margin: 14px 0;" />
+          <ul style="font-size: 0.86rem; margin-left: 16px;">
+            <li>Hasta <strong>3 usuarios</strong> en el equipo.</li>
+            <li>Asistente electoral ilimitado.</li>
+            <li>Perfil territorial del distrito.</li>
+            <li><strong>30 discursos</strong> verificados al mes.</li>
+            <li>Semáforo: <strong>20 búsquedas</strong> de prensa.</li>
+            <li>Tablero Kanban de campaña.</li>
+          </ul>
+        </div>
+
+        <!-- PLAN 2 (DESTACADO) -->
+        <div class="card blue-card" style="border: 2px solid var(--primary);">
+          <div class="card-title">
+            <span>Alcaldía / Dto Federal</span>
+            <span class="badge-pill green">Más Popular</span>
+          </div>
+          <h3 style="font-size: 1.8rem; font-weight: 800; color: var(--primary); margin: 10px 0;">$6,900 <small style="font-size: 0.9rem; color: var(--slate-500); font-weight: 500;">MXN/mes</small></h3>
+          <p style="font-size: 0.85rem; color: var(--slate-600);">Para presidencias municipales medianas y campañas distritales federales.</p>
+          <hr style="border: 0; border-top: 1px solid #bfdbfe; margin: 14px 0;" />
+          <ul style="font-size: 0.86rem; margin-left: 16px;">
+            <li>Hasta <strong>10 usuarios</strong> (con roles).</li>
+            <li><strong>Cartografía interactiva</strong> por sección.</li>
+            <li><strong>100 discursos</strong> auditados al mes.</li>
+            <li>Semáforo: <strong>80 búsquedas</strong> + comparativas.</li>
+            <li>PWA móvil para coordinadores de campo.</li>
+            <li>Exportación Word/PDF sin marcas de agua.</li>
+          </ul>
+        </div>
+
+        <!-- PLAN 3 -->
+        <div class="card purple-card">
+          <div class="card-title">
+            <span>Gubernatura / Agencia</span>
+            <span class="badge-pill amber">Enterprise</span>
+          </div>
+          <h3 style="font-size: 1.8rem; font-weight: 800; color: var(--purple); margin: 10px 0;">$18,500 <small style="font-size: 0.9rem; color: var(--slate-500); font-weight: 500;">MXN/mes</small></h3>
+          <p style="font-size: 0.85rem; color: var(--slate-600);">Para campañas a gobernador, capitales o consultores con múltiples clientes.</p>
+          <hr style="border: 0; border-top: 1px solid #ddd6fe; margin: 14px 0;" />
+          <ul style="font-size: 0.86rem; margin-left: 16px;">
+            <li><strong>Usuarios ilimitados</strong>.</li>
+            <li><strong>Multi-campaña:</strong> Gestiona hasta 5 campañas.</li>
+            <li><strong>Marca Blanca:</strong> Logo de la agencia en reportes.</li>
+            <li>Histórico electoral nacional (INE).</li>
+            <li>Consultas y discursos de alta prioridad.</li>
+            <li>Soporte técnico dedicado 24/7 y 2FA obligatorio.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 6: SEGURIDAD Y COMPLIANCE -->
+    <section id="seguridad" class="doc-section">
+      <h2 class="section-heading">
+        <span>🛡️</span> 6. Seguridad, Privacidad y Confianza Política
+      </h2>
+      <p>
+        El software electoral maneja información altamente sensible: números telefónicos de líderes seccionales,
+        estrategias territoriales y borradores de discursos confidenciales. La venta por suscripción exige blindaje institucional:
+      </p>
+
+      <div class="grid-2">
+        <div>
+          <h3 class="sub-heading">Protección Contra Fugas y Espionaje</h3>
+          <ul>
+            <li><strong>Autenticación en Dos Pasos (2FA/TOTP):</strong> Obligatorio para coordinadores y administradores mediante Google/Microsoft Authenticator para impedir accesos por contraseñas robadas.</li>
+            <li><strong>Bitácora Inmutable (*Audit Trail*):</strong> Registro detallado de cada acción crítica (descargas de listas de contactos, cambios de metas, exportaciones de discursos). Permite identificar al responsable en caso de fuga interna.</li>
+            <li><strong>Expiración y Revocación de Sesiones:</strong> Cierre de sesión remoto inmediato en caso de que un colaborador sea despedido o pierda su dispositivo.</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="sub-heading">Compliance Legal (LFPDPPP)</h3>
+          <ul>
+            <li><strong>Aviso de Privacidad y Consentimiento:</strong> La base de datos de brigadistas almacena datos personales regulados por la ley mexicana. Se debe incorporar aviso de privacidad y opción de borrado definitivo (*derecho ARCO*).</li>
+            <li><strong>Cifrado en Tránsito y Reposo:</strong> Todas las conexiones forzadas a HTTPS con certificados gestionados y bases de datos cifradas en almacenamiento (AES-256).</li>
+            <li><strong>Políticas de Respaldo y Destrucción:</strong> Al finalizar la campaña, el suscriptor puede solicitar la destrucción certificada de sus bases de datos o descargar su archivo histórico encriptado.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 7: HOJA DE RUTA -->
+    <section id="roadmap" class="doc-section">
+      <h2 class="section-heading">
+        <span>📅</span> 7. Hoja de Ruta de Implementación (Roadmap)
+      </h2>
+      <p>
+        Cronograma recomendado en 4 fases secuenciales para transformar el proyecto en un SaaS vendible en 12 semanas:
+      </p>
+
+      <div class="grid-4">
+        <div class="card">
+          <div class="card-title">
+            <span>Fase 1: Base Cloud</span>
+            <span class="badge-pill blue">Sem 1-3</span>
+          </div>
+          <ul style="font-size: 0.85rem; margin-left: 14px;">
+            <li>Sanitizar claves en <code>.env.example</code>.</li>
+            <li>Creación de <code>Dockerfile</code> y <code>docker-compose</code>.</li>
+            <li>Migración de SQLite a <strong>PostgreSQL</strong> (usuarios y campaña).</li>
+            <li>Implementación de <strong>Redis</strong> para rate-limiting y sesiones.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Fase 2: Multi-Tenant</span>
+            <span class="badge-pill green">Sem 4-6</span>
+          </div>
+          <ul style="font-size: 0.85rem; margin-left: 14px;">
+            <li>Modelo <code>Organización</code> con aislamiento estricto (RLS).</li>
+            <li>Integración con <strong>Stripe / Mercado Pago</strong> (Suscripciones).</li>
+            <li>Sistema de medición de cuotas de Groq y SerpAPI (*Metering*).</li>
+            <li>Flujo de invitaciones por correo para equipos.</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Fase 3: Diferenciación</span>
+            <span class="badge-pill amber">Sem 7-9</span>
+          </div>
+          <ul style="font-size: 0.85rem; margin-left: 14px;">
+            <li>Módulo de <strong>Cartografía GIS</strong> (Mapas por sección con Leaflet).</li>
+            <li>Ingesta de cómputos electorales históricos del INE (2018-2024).</li>
+            <li>Optimización <strong>PWA Móvil</strong> para brigadistas de campo.</li>
+            <li>Soporte de <strong>Marca Blanca</strong> (logo personalizado).</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>Fase 4: Salida a Mercado</span>
+            <span class="badge-pill purple">Sem 10-12</span>
+          </div>
+          <ul style="font-size: 0.85rem; margin-left: 14px;">
+            <li>Landing page comercial con calculadora de ROI.</li>
+            <li>Modo demostración interactivo con datos ficticios para ventas.</li>
+            <li>Pruebas de carga y penetración (*pentesting* de seguridad).</li>
+            <li>Campaña de comercialización con consultores políticos.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 8: RESUMEN EJECUTIVO PARA EQUIPO -->
+    <section class="doc-section" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: #ffffff; border: 1px solid #334155;">
+      <h2 class="section-heading" style="color: #ffffff; border-color: rgba(255,255,255,0.15);">
+        <span>📢</span> Conclusión Ejecutiva para la Presentación
+      </h2>
+      <p style="color: #cbd5e1; font-size: 1.05rem;">
+        La aplicación tiene un <strong>núcleo tecnológico superior al promedio de herramientas electorales</strong> en el mercado hispanohablante:
+        no inventa datos, audita las cifras de los discursos y resuelve consultas difusas con alta precisión.
+      </p>
+      <div class="callout success" style="background: rgba(16, 185, 129, 0.15); border-color: #10b981; color: #a7f3d0;">
+        <strong>Propuesta de Valor Comercial Única:</strong>
+        <em>"La única plataforma de inteligencia electoral que no solo analiza los resultados pasados en mapas interactivos, sino que redacta intervenciones públicas con evidencia verificada matemáticamente y coordina las metas de tu equipo en territorio desde el celular."</em>
+      </div>
+      <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 0;">
+        El paso inmediato no requiere rehacer la aplicación, sino <strong>empaquetarla en una capa SaaS multi-inquilino</strong> (PostgreSQL + Stripe + Control de cuotas de IA), lo que abrirá un modelo de negocio con ingresos recurrentes de alto margen y escalabilidad nacional.
+      </p>
+    </section>
+
+  </div>
+
+  <footer>
+    <p>Plataforma de Inteligencia Electoral · Documento de Estrategia SaaS B2B · Septiembre 2026</p>
+  </footer>
+
+</body>
+</html>

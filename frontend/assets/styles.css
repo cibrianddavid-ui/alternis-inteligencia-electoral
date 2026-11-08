@@ -552,3 +552,65 @@ mark.fig-ok { padding: 0 2px; border-radius: 3px; background: transparent; color
   .user-box { display: none; }
   .territory-picker, .tp-goal-form { grid-template-columns: 1fr; }
 }
+
+/* --------------------------------------------------------------------------
+   Cartografía electoral
+   -------------------------------------------------------------------------- */
+.cartography-intro { max-width: 760px; color: var(--muted, #64748b); line-height: 1.55; }
+.cartography-shell { padding: 0 28px 32px; }
+.cartography-filters { display: grid; grid-template-columns: repeat(5, minmax(130px, 1fr)) auto; gap: 12px; align-items: end; padding: 18px; background: #fff; border: 1px solid #e3e8ef; border-radius: 14px; box-shadow: 0 8px 28px rgba(20, 35, 55, .05); }
+.cartography-filters .primary-button { min-height: 42px; white-space: nowrap; }
+.cartography-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 16px; min-height: 620px; }
+.cartography-map-wrap { position: relative; min-width: 0; border: 1px solid #dfe5ec; border-radius: 14px; overflow: hidden; background: #edf1f5; }
+#cartography-map { width: 100%; height: 620px; z-index: 1; }
+.map-legend { position: absolute; z-index: 500; left: 14px; bottom: 14px; display: flex; flex-direction: column; gap: 6px; max-height: 250px; overflow: auto; padding: 11px 13px; border: 1px solid rgba(15, 23, 42, .12); border-radius: 10px; background: rgba(255,255,255,.94); box-shadow: 0 5px 18px rgba(15,23,42,.12); font-size: .78rem; color: #334155; backdrop-filter: blur(6px); }
+.map-legend strong { margin-bottom: 2px; color: #0f172a; }
+.map-legend span { display: flex; align-items: center; gap: 7px; }
+.map-legend i { width: 13px; height: 13px; border-radius: 3px; border: 1px solid rgba(15,23,42,.12); flex: 0 0 auto; }
+.cartography-detail { padding: 22px; border: 1px solid #e3e8ef; border-radius: 14px; background: #fff; box-shadow: 0 8px 28px rgba(20,35,55,.05); align-self: start; }
+.cartography-detail h2 { margin: 5px 0 8px; font-size: 1.35rem; }
+.cartography-detail > p:not(.eyebrow) { color: #64748b; line-height: 1.5; }
+.map-detail-grid { display: grid; gap: 10px; margin: 18px 0; }
+.map-detail-grid > div, .map-party-detail { display: flex; flex-direction: column; gap: 2px; padding: 11px 12px; border: 1px solid #e6eaf0; border-radius: 10px; background: #f8fafc; }
+.map-detail-grid span, .map-party-detail span { font-size: .72rem; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
+.map-detail-grid strong, .map-party-detail strong { color: #172033; }
+.map-detail-grid small, .map-party-detail small { color: #64748b; }
+.map-party-detail { margin: 0 0 14px; }
+.cartography-detail .secondary-button { width: 100%; margin-top: 4px; }
+.leaflet-tooltip { font-family: inherit; border: 0; border-radius: 8px; box-shadow: 0 5px 16px rgba(15,23,42,.16); }
+@media (max-width: 1180px) {
+  .cartography-filters { grid-template-columns: repeat(3, minmax(140px, 1fr)); }
+  .cartography-workspace { grid-template-columns: 1fr; }
+  .cartography-detail { order: -1; }
+  #cartography-map { height: 560px; }
+}
+@media (max-width: 720px) {
+  .cartography-shell { padding: 0 14px 24px; }
+  .cartography-filters { grid-template-columns: 1fr 1fr; }
+  .cartography-filters .primary-button { grid-column: 1 / -1; }
+  #cartography-map { height: 500px; }
+}
+
+/* Cartografía: ganador = partido + intensidad según porcentaje de voto */
+.map-legend small {
+  display: block;
+  margin: .2rem 0 .55rem;
+  color: var(--muted, #667085);
+  line-height: 1.35;
+}
+.map-legend .winner-gradient {
+  width: 58px;
+  min-width: 58px;
+  border-radius: 4px;
+}
+.map-legend .winner-scale {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+  margin-top: .55rem;
+  padding-top: .45rem;
+  border-top: 1px solid rgba(120, 130, 145, .22);
+  font-size: .67rem;
+  color: var(--muted, #667085);
+  text-align: center;
+}
