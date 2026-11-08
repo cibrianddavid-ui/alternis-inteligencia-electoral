@@ -15,16 +15,20 @@ from pathlib import Path
 from typing import Any, Optional
 
 import requests
-from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from groq import Groq
+from groq import Groq, AuthenticationError, RateLimitError, APITimeoutError
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
-from . import auth, basedatos, campania, demo, historial, redaccion
+from .configuracion import ROOT, cargar_entorno
+
+cargar_entorno()
+
+from . import analisis_territorial, auth, basedatos, bloques, campania, demo, historial, limpieza, redaccion, social_listening
 from .asistente_electoral import AsistenteElectoral, Config, preparar_base
+from .cartografia import Cartografia
 from .discursos import datos_distrito, pdf, redactar, word
 from .informes import (nombre_archivo, pdf_discurso, pdf_posicionamiento, txt_discurso,
                        word_discurso)
@@ -32,11 +36,11 @@ from .posicionamiento import buscar
 from .resultados_graficos import ConsultaGraficos, analizar_resultados, construir_catalogo
 from .territorio import Territorio, hechos
 
-ROOT = Path(__file__).resolve().parents[1]
 FRONTEND = ROOT / "frontend"
 DATA = ROOT / "data"
 DATA.mkdir(exist_ok=True)
-load_dotenv(ROOT / ".env")
+
+log = logging.getLogger("uvicorn.error")
 
 SESION_CHAT_TTL = 3 * 3600   # segundos sin actividad
 SESION_CHAT_MAX = 300
@@ -137,6 +141,8 @@ class MetaRequest(_MetaBase):
     indicador: str = Field(default="", max_length=180)
     objetivo: Optional[float] = Field(default=None, ge=0)
     avance: float = Field(default=0, ge=0)
+    etapa: str = Field(default="campania", pattern="^(precampania|campania)$")
+    mes: int = Field(default=1, ge=1, le=3)
 
 
 class MetaCambios(BaseModel):
@@ -168,6 +174,9 @@ class TareaRequest(BaseModel):
     prioridad: str = Field(default="media", pattern="^(baja|media|alta|critica)$")
     peso: int = Field(default=3, ge=1, le=8)
     evidencia: str = Field(default="", max_length=1000)
+    area_id: Optional[int] = None
+    etapa: str = Field(default="campania", pattern="^(precampania|campania)$")
+    mes: int = Field(default=1, ge=1, le=3)
 
 
 class EstadoTareaRequest(BaseModel):
@@ -183,6 +192,8 @@ class EstadoAplicacion:
         self.df = None
         self.mapa: dict[str, str] = {}
         self.territorio: Optional[Territorio] = None
+        self.calidad: Optional[dict[str, Any]] = None
+        self.cartografia: Optional[Cartografia] = None
         self.client: Optional[Groq] = None
         self.config: Optional[Config] = None
         # sesión de chat -> {usuario, asistente, ultimo}. Cada sesión pertenece a una persona.
@@ -192,21 +203,33 @@ class EstadoAplicacion:
         self.error_asistente: Optional[str] = None
 
     def iniciar(self) -> None:
+        cargar_entorno()
+        self.error_asistente = None
+        self.error_inicio = None
+        self.client = None
         self.config = Config(
             # "or": una variable vacía en .env (GROQ_MODEL=) se trata como ausente y usa el valor por defecto.
             sheet_id=os.getenv("GOOGLE_SHEET_ID") or Config.sheet_id,
             gid=os.getenv("GOOGLE_SHEET_GID") or Config.gid,
+            sheet_2018_id=os.getenv("GOOGLE_SHEET_2018_ID") or Config.sheet_2018_id,
+            sheet_2018_gid=os.getenv("GOOGLE_SHEET_2018_GID") or Config.sheet_2018_gid,
+            sheet_2012_id=os.getenv("GOOGLE_SHEET_2012_ID") or Config.sheet_2012_id,
+            sheet_2012_gid=os.getenv("GOOGLE_SHEET_2012_GID") or Config.sheet_2012_gid,
             ruta_bd=str(DATA / "electoral.db"),
             modelo=os.getenv("GROQ_MODEL") or Config.modelo,
         )
         api_key = os.getenv("GROQ_API_KEY", "").strip()
         if api_key:
-            self.client = Groq(api_key=api_key)
+            self.client = Groq(api_key=api_key, timeout=45.0, max_retries=1)
         else:
-            self.error_asistente = "Falta configurar GROQ_API_KEY en el archivo .env."
+            log.warning("Groq no configurado. Carpeta del proyecto en ejecución: %s", ROOT)
+            self.error_asistente = ("El servidor no encontró una clave de Groq. En la carpeta de esta instalación "
+                                    "ejecuta python configurar_claves.py y después reinicia el servidor.")
         try:
             self.df, self.mapa = preparar_base(self.config)
             self.territorio = Territorio(self.df, self.mapa)
+            self.calidad = limpieza.auditar(self.df, self.mapa)
+            self.cartografia = Cartografia(self.territorio, DATA / "cartografia" / "secciones.geojson")
         except Exception as exc:  # El detalle queda disponible para el administrador en /api/health.
             self.error_inicio = str(exc)
 
@@ -261,8 +284,9 @@ app = FastAPI(
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],
-    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_origin_regex=r"^https?://.*",
+    allow_credentials=True,
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 app.include_router(auth.router)
@@ -286,6 +310,10 @@ async def seguridad(request: Request, call_next):
     response.headers.setdefault("Referrer-Policy", "same-origin")
     if request.url.path.startswith("/api/"):
         response.headers.setdefault("Cache-Control", "no-store")
+    else:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
     return response
 
 
@@ -386,9 +414,95 @@ def perfil_territorio(nivel: str, unidad: str, anio: Optional[str] = None,
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
+class AnalisisTerritorialRequest(BaseModel):
+    nivel: str = Field(max_length=40)
+    unidad: str = Field(max_length=120)
+    anio: Optional[str] = Field(default=None, max_length=10)
+    regenerar: bool = False
+
+
+@app.get("/api/territorio/comparativo")
+def comparativo_territorio(nivel: str, unidad: str, anio: Optional[str] = None,
+                           _: dict[str, Any] = Depends(auth.usuario_actual)) -> dict[str, Any]:
+    """Voto por partido u opción registrada en cada elección, diferencias entre elecciones y cambios de ganador por sección. Sin IA."""
+    _exigir_datos()
+    if estado.territorio is None:
+        raise HTTPException(status_code=503, detail="El perfil territorial no está disponible.")
+    try:
+        return analisis_territorial.comparativo(estado.territorio, nivel, unidad, anio)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.post("/api/territorio/analisis")
+def analisis_territorio(solicitud: AnalisisTerritorialRequest,
+                        _: dict[str, Any] = Depends(auth.usuario_actual)) -> dict[str, Any]:
+    """Análisis escrito del territorio. El modelo redacta; las cifras salen de pandas y se verifican."""
+    _exigir_datos()
+    if estado.territorio is None:
+        raise HTTPException(status_code=503, detail="El perfil territorial no está disponible.")
+    if estado.client is None:
+        raise HTTPException(status_code=503, detail=estado.error_asistente or "El modelo de lenguaje no está configurado.")
+    try:
+        return analisis_territorial.analizar(estado.territorio, estado.client, estado.modelo(), solicitud.nivel,
+                                             solicitud.unidad, solicitud.anio, solicitud.regenerar)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except AuthenticationError as exc:
+        raise HTTPException(status_code=502, detail="Groq rechazó la clave configurada. Revisa GROQ_API_KEY en .env y reinicia el servidor.") from exc
+    except RateLimitError as exc:
+        raise HTTPException(status_code=429, detail="Groq alcanzó su límite de uso. Espera unos momentos y vuelve a intentar.") from exc
+    except APITimeoutError as exc:
+        raise HTTPException(status_code=504, detail="Groq tardó demasiado en responder. Vuelve a intentar.") from exc
+    except Exception as exc:
+        logging.getLogger(__name__).exception("Falló el análisis territorial")
+        raise HTTPException(status_code=502, detail="No fue posible redactar el análisis. Intenta de nuevo.") from exc
+
+
+@app.get("/api/calidad")
+def calidad_datos(_: dict[str, Any] = Depends(auth.requiere("admin"))) -> dict[str, Any]:
+    """Hallazgos de calidad de la base, con qué hacer en la fuente."""
+    _exigir_datos()
+    return {**(estado.calidad or {}), "bloques": bloques.definicion()}
+
+
+# ---------------------------------------------------------------------------
+# Cartografía electoral
+# ---------------------------------------------------------------------------
+
+@app.get("/api/cartografia/catalogo")
+def catalogo_cartografia(_: dict[str, Any] = Depends(auth.usuario_actual)) -> dict[str, Any]:
+    _exigir_datos()
+    if estado.cartografia is None:
+        raise HTTPException(status_code=503, detail="La cartografía electoral no está disponible.")
+    return estado.cartografia.catalogo()
+
+
+@app.get("/api/cartografia/mapa")
+def mapa_cartografia(eleccion: str, anio: Optional[str] = None, nivel: Optional[str] = None,
+                     unidad: Optional[str] = None, variable: str = "ganador",
+                     _: dict[str, Any] = Depends(auth.usuario_actual)) -> dict[str, Any]:
+    _exigir_datos()
+    if estado.cartografia is None:
+        raise HTTPException(status_code=503, detail="La cartografía electoral no está disponible.")
+    try:
+        return estado.cartografia.mapa(anio=anio, eleccion=eleccion, nivel=nivel, unidad=unidad,
+                                       variable=variable)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 # ---------------------------------------------------------------------------
 # Semáforo de posicionamiento (coordinador o superior: consume búsquedas de pago)
 # ---------------------------------------------------------------------------
+
+@app.get("/api/cartografia/casillas")
+def casillas_cartografia(_: dict[str, Any] = Depends(auth.usuario_actual)):
+    from .casillas_v4 import cargar_casillas
+    return cargar_casillas(DATA / "casillas_2024.csv")
+
 
 @app.post("/api/posicionamiento/analizar")
 def posicionamiento(solicitud: NoticiasRequest, _: dict[str, Any] = Depends(auth.requiere("coordinador"))) -> dict[str, Any]:
@@ -654,6 +768,23 @@ def mover_tarea(tarea_id: int, solicitud: EstadoTareaRequest, _: dict[str, Any] 
     return resultado
 
 
+class TareaOrganizacion(BaseModel):
+    area_id: Optional[int] = None
+    etapa: Optional[str] = Field(default=None, pattern="^(precampania|campania)$")
+    mes: Optional[int] = Field(default=None, ge=1, le=3)
+
+
+@app.patch("/api/campania/tareas/{tarea_id}/organizacion")
+def organizar_tarea(tarea_id: int, solicitud: TareaOrganizacion, _: dict[str, Any] = Depends(auth.requiere("coordinador"))):
+    try:
+        resultado = campania.actualizar_tarea(tarea_id, solicitud.model_dump(exclude_unset=True))
+    except (ValueError, sqlite3.IntegrityError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if resultado is None:
+        raise HTTPException(status_code=404, detail="Tarea no encontrada")
+    return resultado
+
+
 @app.delete("/api/campania/{tabla}/{item_id}")
 def borrar_campania(tabla: str, item_id: int, _: dict[str, Any] = Depends(auth.requiere("coordinador"))):
     if tabla not in ("areas", "metas", "personas", "tareas"):
@@ -661,6 +792,178 @@ def borrar_campania(tabla: str, item_id: int, _: dict[str, Any] = Depends(auth.r
     if not campania.eliminar(tabla, item_id):
         raise HTTPException(status_code=404, detail="Registro no encontrado.")
     return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Social Listening — análisis de redes sociales (Facebook / Apify)
+# ---------------------------------------------------------------------------
+
+@app.post("/api/social/analizar")
+async def social_analizar(
+    solicitud: social_listening.SolicitudSocial,
+    _: dict[str, Any] = Depends(auth.requiere("coordinador")),
+) -> social_listening.ResultadoSocial:
+    """Ejecuta el pipeline de Social Listening para un perfil público de Facebook.
+
+    Prioriza al 100% el análisis con el modelo de lenguaje (LLM en social_listening.py).
+    Si el proceso del LLM falla de forma crítica, se invoca explícitamente el módulo
+    aislado de contingencia (social_fallback.py).
+    """
+    import asyncio  # noqa: PLC0415
+    loop = asyncio.get_event_loop()
+
+    client = estado.client
+    if client is None:
+        api_key = os.getenv("GROQ_API_KEY", "").strip()
+        if api_key:
+            client = Groq(api_key=api_key)
+    modelo = estado.modelo() if hasattr(estado, "modelo") else (os.getenv("GROQ_MODEL") or "openai/gpt-oss-120b")
+
+    try:
+        resultado = await loop.run_in_executor(
+            None,
+            lambda: social_listening.analizar_perfil(
+                solicitud,
+                groq_client=client,
+                groq_model=modelo,
+            ),
+        )
+        return resultado
+    except Exception as exc_llm:
+        log.warning(
+            "Fallo en el pipeline LLM de Social Listening (%s). Activando módulo de respaldo independiente (social_fallback)...",
+            exc_llm,
+        )
+        from . import social_fallback  # noqa: PLC0415
+        return await loop.run_in_executor(
+            None,
+            lambda: social_fallback.analizar_perfil_fallback(solicitud, error_origen=str(exc_llm)),
+        )
+
+
+@app.post("/api/social/posts/analizar")
+@app.post("/api/social/posts")
+async def social_analizar_posts(
+    solicitud: social_listening.SolicitudPostsSocial,
+    _: dict[str, Any] = Depends(auth.requiere("coordinador")),
+) -> social_listening.ResultadoPostsManual:
+    """Ejecuta el pipeline de Social Listening para una lista manual de publicaciones de Facebook.
+
+    Procesa cada publicación de forma individual y, cuando se proporcionan dos o más
+    publicaciones, genera una comparación estadística y temática.
+    """
+    import asyncio  # noqa: PLC0415
+    loop = asyncio.get_event_loop()
+
+    client = estado.client
+    if client is None:
+        api_key = os.getenv("GROQ_API_KEY", "").strip()
+        if api_key:
+            client = Groq(api_key=api_key)
+    modelo = estado.modelo() if hasattr(estado, "modelo") else (os.getenv("GROQ_MODEL") or "openai/gpt-oss-120b")
+
+    return await loop.run_in_executor(
+        None,
+        lambda: social_listening.analizar_posts_manual(
+            solicitud,
+            groq_client=client,
+            groq_model=modelo,
+        ),
+    )
+
+
+class ExportarSocialPDF(BaseModel):
+    tipo: str = Field(..., description="Tipo de reporte: 'perfil', 'posts', 'comparativa', 'historico'")
+    data: dict[str, Any] = Field(..., description="Datos del resultado del análisis a exportar")
+
+
+@app.post("/api/social/exportar/pdf")
+@app.post("/api/social/exportar")
+def social_exportar_pdf(
+    solicitud: ExportarSocialPDF,
+    _: dict[str, Any] = Depends(auth.requiere("coordinador")),
+):
+    """Exporta los análisis de Social Listening en formato PDF estructurado."""
+    try:
+        contenido, nombre = social_listening.generar_pdf_social(solicitud.tipo, solicitud.data)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        log.error("Error generando PDF de social listening (%s): %s", solicitud.tipo, exc, exc_info=True)
+        raise HTTPException(status_code=422, detail=f"No se pudo generar el reporte en PDF: {exc}") from exc
+
+    return StreamingResponse(
+        io.BytesIO(contenido),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{nombre}"'},
+    )
+
+
+# ---------------------------------------------------------------------------
+# Histórico de postura por perfil (Exclusivamente BD Local, 0 llamadas a Apify)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/social/historico/perfiles")
+def social_historico_perfiles(
+    _: dict[str, Any] = Depends(auth.requiere("coordinador")),
+) -> list[dict[str, Any]]:
+    """Devuelve la lista de perfiles que ya cuentan con publicaciones almacenadas en SQLite."""
+    perfiles = social_listening.obtener_perfiles_en_bd()
+    return [p.model_dump() for p in perfiles]
+
+
+@app.get("/api/social/historico")
+@app.post("/api/social/historico")
+async def social_historico(
+    solicitud: Optional[social_listening.SolicitudHistorico] = None,
+    url_perfil: Optional[str] = Query(None, description="URL pública del perfil de Facebook a consultar en la BD"),
+    agrupacion: str = Query("mes", description="Nivel de agrupación: 'semana' o 'mes'"),
+    _: dict[str, Any] = Depends(auth.requiere("coordinador")),
+) -> dict[str, Any]:
+    """Genera la serie temporal histórica agrupada por semana o mes sin llamadas a Apify."""
+    target_url = (solicitud.url_perfil if solicitud else url_perfil) or ""
+    target_agrupacion = (solicitud.agrupacion if solicitud else agrupacion) or "mes"
+
+    if not target_url.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Debe proporcionar 'url_perfil' ya sea en el cuerpo JSON o como parámetro de consulta.",
+        )
+
+    if target_agrupacion not in ("semana", "mes"):
+        raise HTTPException(
+            status_code=400,
+            detail="El parámetro 'agrupacion' debe ser exactamente 'semana' o 'mes'.",
+        )
+
+    import asyncio  # noqa: PLC0415
+    loop = asyncio.get_event_loop()
+
+    client = estado.client
+    if client is None:
+        api_key = os.getenv("GROQ_API_KEY", "").strip()
+        if api_key:
+            client = Groq(api_key=api_key)
+    modelo = estado.modelo() if hasattr(estado, "modelo") else (os.getenv("GROQ_MODEL") or "openai/gpt-oss-120b")
+
+    try:
+        resultado = await loop.run_in_executor(
+            None,
+            lambda: social_listening.analizar_historico_perfil(
+                url_perfil=target_url,
+                agrupacion=target_agrupacion,
+                groq_client=client,
+                groq_model=modelo,
+            ),
+        )
+        return resultado.model_dump()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        log.error("Error en análisis histórico de perfil (%s): %s", target_url, exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error en análisis histórico: {exc}") from exc
+
+
 
 
 # ---------------------------------------------------------------------------

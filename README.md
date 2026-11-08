@@ -1,4 +1,4 @@
-# Plataforma de Inteligencia Electoral
+# Plataforma de Inteligencia Electoral — versión 3
 
 Aplicación web con FastAPI y un frontend ligero para consultar resultados electorales, ver el perfil de cualquier
 territorio, analizar la cobertura de prensa, redactar discursos con cifras verificadas y dar seguimiento a la campaña.
@@ -121,3 +121,43 @@ data/      bases SQLite generadas localmente
 - Los datos electorales disponibles son de un solo año (2024); las funciones de tendencia esperan más años.
 - En pantallas de celular no se muestra el bloque de usuario (cerrar sesión, contraseña y recorrido).
 - El límite de intentos de acceso vive en memoria: con varios procesos de servidor no se comparte.
+
+## Cartografía electoral
+
+La pestaña **Cartografía electoral** usa `data/cartografia/secciones.geojson` (WGS84 / EPSG:4326), generado a partir de los archivos oficiales `SECCION.shp/.shx/.dbf/.prj`. El backend une cada polígono con los resultados mediante `SECCION` y expone `/api/cartografia/catalogo` y `/api/cartografia/mapa`. El visor permite representar ganador, margen entre primero y segundo, participación y porcentaje de voto de una fuerza política, y enlaza cada sección con su Perfil territorial.
+
+## Corrección de versión 3 (8 de octubre de 2026)
+
+El comparativo del Perfil territorial, las diferencias por elección, el histórico y la ficha para la IA ahora
+usan cada partido u opción registrada por separado. El contrato del comparativo devuelve `partidos` y
+`por_partido`, en lugar de `bloques` y `por_bloque`. El frontend incluido ya usa ese contrato.
+Las coaliciones de la base se mantienen como opciones independientes: no se distribuyeron sus votos.
+
+La configuración activa es `.env`, en la raíz del proyecto. En el archivo recibido la clave estaba en
+`.env.example`; se trasladó a `.env` y se limpiaron las claves del ejemplo. Las variables no vacías del servidor tienen
+precedencia sobre `.env`. Una variable GROQ_API_KEY vacía no impide recuperar la clave local. Reinicia el proceso después de modificar la configuración.
+El análisis territorial distingue errores de autenticación, límite de uso y tiempo de espera de Groq.
+
+Pruebas de regresión (con las dependencias instaladas):
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+Consulta `REVISION_V3.md` para la evaluación completa y los pendientes. Esta entrega conserva las bases de datos
+recibidas y las claves en `.env`; prepara una distribución sin credenciales ni bases privadas si vas a compartirla.
+No incluye el entorno virtual de macOS: créalo de nuevo con los comandos de instalación.
+
+### Si sigue apareciendo «Falta GROQ_API_KEY»
+
+Detén el servidor y verifica que estés en la carpeta de esta versión. Ejecuta:
+
+```bash
+python configurar_claves.py
+python run.py
+```
+
+El configurador muestra la carpeta y guarda la clave sin imprimirla. Si no la encuentra, la pide en la terminal
+sin mostrarla mientras escribes o pegas. Conserva las demás variables de `.env`.
+La carga recupera una clave con formato Groq de `.env.example` como compatibilidad con versiones anteriores,
+pero solo cuando no existe una clave no vacía en el entorno o `.env`. No toma marcadores de ejemplo como claves.

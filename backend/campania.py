@@ -56,12 +56,14 @@ def iniciar():
                 "fecha_limite": "TEXT", "indicador": "TEXT NOT NULL DEFAULT ''", "objetivo": "REAL",
                 # Territorio al que se refiere la meta (nivel + valor) y avance acumulado del indicador.
                 "territorio_tipo": "TEXT", "territorio_valor": "TEXT",
-                "avance": "REAL NOT NULL DEFAULT 0", "demo": "INTEGER NOT NULL DEFAULT 0"
+                "avance": "REAL NOT NULL DEFAULT 0", "demo": "INTEGER NOT NULL DEFAULT 0",
+                "etapa": "TEXT NOT NULL DEFAULT 'campania'", "mes": "INTEGER NOT NULL DEFAULT 1"
             },
             "tareas": {
                 "prioridad": "TEXT NOT NULL DEFAULT 'media'", "peso": "INTEGER NOT NULL DEFAULT 3",
                 "fecha_finalizacion": "TEXT", "evidencia": "TEXT NOT NULL DEFAULT ''",
-                "demo": "INTEGER NOT NULL DEFAULT 0"
+                "demo": "INTEGER NOT NULL DEFAULT 0", "area_id": "INTEGER REFERENCES areas(id) ON DELETE SET NULL",
+                "etapa": "TEXT NOT NULL DEFAULT 'campania'", "mes": "INTEGER NOT NULL DEFAULT 1"
             }
         }
         for tabla, columnas in migraciones.items():
@@ -81,9 +83,9 @@ def crear(tabla, datos):
     campos = {
         "areas": ("nombre", "descripcion"),
         "metas": ("titulo", "descripcion", "responsable_id", "area_id", "fecha_limite", "indicador", "objetivo",
-                  "territorio_tipo", "territorio_valor", "avance"),
+                  "territorio_tipo", "territorio_valor", "avance", "etapa", "mes"),
         "personas": ("nombre", "contacto", "area_id"),
-        "tareas": ("titulo", "descripcion", "meta_id", "persona_id", "fecha_limite", "prioridad", "peso", "evidencia")
+        "tareas": ("titulo", "descripcion", "meta_id", "persona_id", "fecha_limite", "prioridad", "peso", "evidencia", "area_id", "etapa", "mes")
     }[tabla]
     with conectar() as db:
         cursor = db.execute(f"INSERT INTO {tabla} ({','.join(campos)}) VALUES ({','.join('?' for _ in campos)})",
@@ -110,7 +112,7 @@ def eliminar(tabla, item_id):
 
 
 CAMPOS_EDITABLES_META = ("titulo", "descripcion", "responsable_id", "area_id", "fecha_limite", "indicador",
-                         "objetivo", "territorio_tipo", "territorio_valor", "avance")
+                         "objetivo", "territorio_tipo", "territorio_valor", "avance", "etapa", "mes")
 
 
 def actualizar_meta(meta_id, datos):
@@ -137,3 +139,20 @@ def quitar_demo():
         for tabla in ("tareas", "metas", "personas", "areas"):
             total += db.execute(f"DELETE FROM {tabla} WHERE demo=1").rowcount
         return total
+
+
+def actualizar_tarea(tarea_id, cambios):
+    permitidos = {"area_id", "etapa", "mes"}
+    if not cambios or set(cambios) - permitidos:
+        raise ValueError("Campos de tarea no permitidos")
+    if "etapa" in cambios and cambios["etapa"] not in ("precampania", "campania"):
+        raise ValueError("Etapa inválida")
+    if "mes" in cambios and cambios["mes"] not in (1, 2, 3):
+        raise ValueError("Mes inválido")
+    with conectar() as db:
+        if "area_id" in cambios and cambios["area_id"] is not None:
+            if not db.execute("SELECT 1 FROM areas WHERE id=?", (cambios["area_id"],)).fetchone():
+                raise ValueError("Área inexistente")
+        db.execute("UPDATE tareas SET " + ", ".join(f"{k}=?" for k in cambios) + " WHERE id=?", [*cambios.values(), tarea_id])
+        row = db.execute("SELECT * FROM tareas WHERE id=?", (tarea_id,)).fetchone()
+        return dict(row) if row else None

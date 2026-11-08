@@ -20,6 +20,8 @@ from typing import Any
 import pandas as pd
 from rapidfuzz import fuzz, process
 
+from . import limpieza
+
 
 # ---------------------------------------------------------------------------
 # 1. Configuracion
@@ -29,6 +31,10 @@ from rapidfuzz import fuzz, process
 class Config:
     sheet_id: str = "1ytiQRi8MB3-JOdbqimJr7Virk5MkWYEqFhb1SozatyQ"
     gid: str = "1450398291"
+    sheet_2018_id: str = "1TcOzvGdsSyEfzhAlWg_ujfQBvVmqs9UXcw71maGfPF8"
+    sheet_2018_gid: str = "1745827419"
+    sheet_2012_id: str = "1UZ-IBRkjbF3-b2GkMcA3zDaqNcAf-X-cjC85WcLamJg"
+    sheet_2012_gid: str = "792258105"
     ruta_bd: str = "electoral.db"
     tabla: str = "resultados"
     modelo: str = "openai/gpt-oss-120b"
@@ -109,33 +115,97 @@ def encontrar_columna(columnas: list[str], concepto: str) -> str | None:
     return None
 
 
-def cargar_datos(config: Config = CONFIG) -> tuple[pd.DataFrame, dict[str, str]]:
-    # keep_default_na=False: el partido "NA" (Nueva Alianza) no debe leerse como valor
-    # faltante. Solo las celdas realmente vacías se consideran nulas.
-    df = pd.read_csv(config.url_csv, keep_default_na=False, na_values=[""])
+def _leer_fuente(url: str, anio: int) -> pd.DataFrame:
+    """Descarga una hoja publicada/compartida para lectura y valida su año."""
+    df = pd.read_csv(url, keep_default_na=False, na_values=[""])
     df.columns = columnas_unicas(df.columns)
-
-    mapa = {
-        concepto: col
-        for concepto in ALIAS_COLUMNAS
-        if (col := encontrar_columna(df.columns.tolist(), concepto)) is not None
-    }
-    faltantes = {"partido", "votos", "tipo_eleccion"} - mapa.keys()
+    if df.empty:
+        raise ValueError(f"La fuente {anio} está vacía")
+    col_anio = encontrar_columna(df.columns.tolist(), "anio")
+    if col_anio is None:
+        df["anio"] = anio
+    else:
+        years = pd.to_numeric(df[col_anio], errors="coerce")
+        if years.isna().any() or not years.eq(anio).all():
+            raise ValueError(f"La fuente {anio} contiene años inválidos o distintos de {anio}")
+        if col_anio != "anio":
+            df = df.rename(columns={col_anio: "anio"})
+    # Unificar nombres de columnas equivalentes antes de concatenar.
+    for concepto in ALIAS_COLUMNAS:
+        alias = encontrar_columna(df.columns.tolist(), concepto)
+        if alias and alias != concepto:
+            if concepto in df.columns:
+                raise ValueError(f"Fuente {anio}: columnas ambiguas para {concepto}")
+            df = df.rename(columns={alias: concepto})
+    obligatorias = {"partido", "votos", "tipo_eleccion", "seccion", "municipio"}
+    faltantes = obligatorias - set(df.columns)
     if faltantes:
-        raise ValueError(f"Faltan columnas indispensables: {sorted(faltantes)}")
+        raise ValueError(f"Fuente {anio}: faltan columnas {sorted(faltantes)}")
+    return df
 
-    df[mapa["votos"]] = pd.to_numeric(df[mapa["votos"]], errors="coerce")
-    if df[mapa["votos"]].isna().any():
-        n = int(df[mapa["votos"]].isna().sum())
-        raise ValueError(f"La columna de votos contiene {n} valores no numericos.")
-    if (df[mapa["votos"]] < 0).any():
-        raise ValueError("La columna de votos contiene cantidades negativas.")
 
-    # Columnas auxiliares para comparar sin problemas de acentos o abreviaturas.
+def _leer_fuente_2012(url: str) -> pd.DataFrame:
+    """Conserva columnas históricas y homologación territorial 2024."""
+    df = pd.read_csv(url, dtype={"seccion": "string"}, low_memory=False)
+    required = {"entidad", "municipio_2012", "seccion", "tipo_eleccion", "anio", "partido", "votos"}
+    if required - set(df.columns):
+        raise ValueError(f"2012: columnas faltantes {sorted(required - set(df.columns))}")
+    # Las consultas usan la geografía comparable de 2024, sin borrar el municipio original.
+    df["municipio"] = df.get("municipio_analisis_2024", df.get("municipio_2024", df["municipio_2012"]))
+    df["municipio"] = df["municipio"].fillna(df["municipio_2012"])
+    df["id_distrito_local"] = df.get("id_distrito_local_2024")
+    df["id_distrito_federal"] = df.get("id_distrito_federal_2024")
+    df["anio"] = 2012
+    return df
+
+
+def homologar_elecciones(df: pd.DataFrame) -> pd.DataFrame:
+    """Unifica cargos equivalentes antes de agrupar o persistir votos."""
+    import unicodedata
+    def canon(valor):
+        raw = unicodedata.normalize("NFKD", str(valor or "").strip().upper())
+        key = re.sub(r"[^A-Z0-9]+", "_", "".join(c for c in raw if not unicodedata.combining(c))).strip("_")
+        equivalencias = {
+            "AYUNTAMIENTO": "AYUNTAMIENTO", "AYUNTAMIENTOS": "AYUNTAMIENTO",
+            "DIPUTACION_LOC": "DIPUTACION_LOC", "DIPUTACION_LOCAL": "DIPUTACION_LOC", "DIPUTACIONES_LOCALES": "DIPUTACION_LOC",
+            "DIPUTACION_FED": "DIPUTACION_FED", "DIPUTACION_FEDERAL": "DIPUTACION_FED", "DIPUTACIONES_FEDERALES": "DIPUTACION_FED", "DIP_FEDERAL": "DIPUTACION_FED",
+            "PRESIDENCIA": "PRESIDENTE", "PRESIDENTE": "PRESIDENTE", "PRESIDENCIA_DE_LA_REPUBLICA": "PRESIDENTE",
+            "SENADO": "SENADURIA", "SENADURIA": "SENADURIA", "SENADURIAS": "SENADURIA",
+        }
+        return equivalencias.get(key, key)
+    df = df.copy()
+    df["tipo_eleccion"] = df["tipo_eleccion"].map(canon)
+    return df
+
+
+def cargar_datos(config: Config = CONFIG) -> tuple[pd.DataFrame, dict[str, str]]:
+    fuentes = [
+        (2024, config.url_csv),
+        (2018, f"https://docs.google.com/spreadsheets/d/{config.sheet_2018_id}/export?format=csv&gid={config.sheet_2018_gid}"),
+        (2012, f"https://docs.google.com/spreadsheets/d/{config.sheet_2012_id}/export?format=csv&gid={config.sheet_2012_gid}"),
+    ]
+    partes = []
+    for anio, url in fuentes:
+        try:
+            fuente = _leer_fuente_2012(url) if anio == 2012 else _leer_fuente(url, anio)
+            partes.append(fuente)
+        except Exception as exc:
+            raise RuntimeError(f"No se pudo importar Google Sheets {anio}: {exc}") from exc
+    # Evita columnas silenciosamente incompletas cuando un archivo cambia.
+    todas = set().union(*(set(p.columns) for p in partes))
+    for campo in ("entidad", "municipio", "seccion", "id_distrito_local", "id_distrito_federal", "tipo_eleccion", "partido", "votos", "anio"):
+        if any(campo not in p.columns for p in partes):
+            raise ValueError(f"La columna {campo} no está presente en todas las fuentes; homologar antes de importar")
+    partes = [homologar_elecciones(p) for p in partes]
+    df = pd.concat([p.reindex(columns=sorted(todas)) for p in partes], ignore_index=True)
+    mapa = {concepto: concepto for concepto in ALIAS_COLUMNAS if concepto in df.columns}
+    df = limpieza.normalizar(df, mapa)
+    df["votos"] = pd.to_numeric(df["votos"], errors="coerce")
+    if df["votos"].isna().any() or (df["votos"] < 0).any():
+        raise ValueError("La columna votos contiene cantidades inválidas o negativas")
     for concepto in DIMENSIONES:
         if concepto in mapa:
             df[f"__norm_{concepto}"] = df[mapa[concepto]].map(normalizar_texto)
-
     return df, mapa
 
 

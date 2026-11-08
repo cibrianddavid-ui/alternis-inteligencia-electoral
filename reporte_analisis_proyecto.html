@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reporte de Arquitectura y Análisis - Plataforma de Inteligencia Electoral</title>
+  <style>
+    :root {
+      --navy-900: #0b111e;
+      --navy-800: #111b2b;
+      --navy-700: #1a273e;
+      --navy-600: #253654;
+      --slate-500: #64748b;
+      --slate-400: #94a3b8;
+      --slate-300: #cbd5e1;
+      --slate-100: #f1f5f9;
+      --white: #ffffff;
+      --accent-blue: #3b82f6;
+      --accent-teal: #0d9488;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #ef4444;
+      --border-color: #e2e8f0;
+      --card-bg: #ffffff;
+      --page-bg: #f8fafc;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --code-bg: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--page-bg);
+      color: var(--text-main);
+      line-height: 1.6;
+      padding-bottom: 80px;
+    }
+
+    header.hero {
+      background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 50%, var(--navy-700) 100%);
+      color: var(--white);
+      padding: 50px 24px;
+      border-bottom: 1px solid var(--navy-600);
+    }
+
+    .hero-container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .badge-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--slate-300);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .badge.green { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4); }
+    .badge.blue { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border-color: rgba(59, 130, 246, 0.4); }
+    .badge.amber { background: rgba(245, 158, 11, 0.2); color: #fde68a; border-color: rgba(245, 158, 11, 0.4); }
+
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .hero-subtitle {
+      font-size: 1.15rem;
+      color: var(--slate-300);
+      max-width: 850px;
+      margin-bottom: 20px;
+    }
+
+    .metadata-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.85rem;
+    }
+
+    .meta-item strong {
+      display: block;
+      color: var(--slate-400);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .meta-item span {
+      color: var(--white);
+      font-weight: 600;
+    }
+
+    .main-container {
+      max-width: 1200px;
+      margin: -24px auto 0;
+      padding: 0 24px;
+    }
+
+    .nav-sticky {
+      position: sticky;
+      top: 12px;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 8px 16px;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      margin-bottom: 32px;
+    }
+
+    .nav-sticky a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 6px;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .nav-sticky a:hover {
+      background: var(--slate-100);
+      color: var(--navy-800);
+    }
+
+    section.report-section {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 32px;
+      margin-bottom: 28px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    }
+
+    h2.section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--navy-800);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--slate-100);
+    }
+
+    h3.sub-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--navy-700);
+      margin: 24px 0 12px 0;
+    }
+
+    p {
+      margin-bottom: 14px;
+      color: #334155;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      margin-top: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .card {
+      background: var(--page-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .card.highlight {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+    }
+
+    .card.success {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+
+    .card.warning {
+      background: #fffbeb;
+      border-color: #fde68a;
+    }
+
+    .card.danger {
+      background: #fef2f2;
+      border-color: #fecaca;
+    }
+
+    .card-header {
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Tablas */
+    .table-responsive {
+      overflow-x: auto;
+      margin: 16px 0;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      text-align: left;
+    }
+
+    th {
+      background: var(--slate-100);
+      color: var(--navy-800);
+      font-weight: 700;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      color: #334155;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background-color: #f8fafc;
+    }
+
+    /* Diagrama de Arquitectura */
+    .architecture-diagram {
+      background: var(--navy-900);
+      color: #e2e8f0;
+      border-radius: 12px;
+      padding: 28px;
+      margin: 20px 0;
+      font-family: monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      line-height: 1.4;
+    }
+
+    .arch-flow {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .arch-layer {
+      border: 1px dashed #334155;
+      border-radius: 8px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .layer-title {
+      font-weight: bold;
+      color: #38bdf8;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .layer-components {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .comp-box {
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      padding: 10px 14px;
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .comp-box strong {
+      display: block;
+      color: #f8fafc;
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+
+    .comp-box span {
+      font-size: 0.78rem;
+      color: #94a3b8;
+    }
+
+    /* Code Blocks */
+    pre, code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    pre {
+      background: var(--code-bg);
+      color: #e2e8f0;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      overflow-x: auto;
+      margin: 14px 0;
+    }
+
+    code:not(pre code) {
+      background: var(--slate-100);
+      color: var(--navy-800);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+
+    .callout {
+      border-left: 4px solid;
+      padding: 16px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 18px 0;
+    }
+
+    .callout.danger {
+      border-color: var(--accent-rose);
+      background: #fef2f2;
+      color: #991b1b;
+    }
+
+    .callout.warning {
+      border-color: var(--accent-amber);
+      background: #fffbeb;
+      color: #92400e;
+    }
+
+    .callout.info {
+      border-color: var(--accent-blue);
+      background: #eff6ff;
+      color: #1e40af;
+    }
+
+    .callout.success {
+      border-color: var(--accent-green);
+      background: #f0fdf4;
+      color: #166534;
+    }
+
+    .callout strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    ul, ol {
+      margin-left: 20px;
+      margin-bottom: 16px;
+      color: #334155;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 40px 0 20px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HERO SECTION -->
+  <header class="hero">
+    <div class="hero-container">
+      <div class="badge-bar">
+        <span class="badge blue">Versión 1.0.0</span>
+        <span class="badge green">Branch: mi-version-aut-recorrido-perfil</span>
+        <span class="badge amber">Auditoría Técnica Completa</span>
+      </div>
+      <h1>Plataforma de Inteligencia Electoral</h1>
+      <p class="hero-subtitle">
+        Informe exhaustivo de arquitectura, flujos deterministas, modelo de seguridad RBAC,
+        fichas territoriales, verificación de cifras y módulos analíticos para San Luis Potosí.
+      </p>
+      <div class="metadata-grid">
+        <div class="meta-item">
+          <strong>Framework Backend</strong>
+          <span>FastAPI + Uvicorn + Pydantic</span>
+        </div>
+        <div class="meta-item">
+          <strong>Frontend</strong>
+          <span>Vanilla JS (ES6) + CSS3 (No NPM)</span>
+        </div>
+        <div class="meta-item">
+          <strong>Bases de Datos</strong>
+          <span>3x SQLite (Electoral, Campaña, Plataforma)</span>
+        </div>
+        <div class="meta-item">
+          <strong>Motores IA / NLP</strong>
+          <span>Groq (GPT-OSS-120B) + SpaCy + RapidFuzz</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <div class="main-container">
+
+    <!-- BARRA DE NAVEGACIÓN RÁPIDA -->
+    <nav class="nav-sticky">
+      <a href="#novedades">Novedades</a>
+      <a href="#arquitectura">Arquitectura Global</a>
+      <a href="#diagrama-flujo">Diagrama de Flujo</a>
+      <a href="#seguridad">Seguridad & RBAC</a>
+      <a href="#modulos">Análisis de Módulos</a>
+      <a href="#discursos">Verificación de Cifras</a>
+      <a href="#datos">Bases de Datos</a>
+      <a href="#evaluacion">Evaluación & Recomendaciones</a>
+    </nav>
+
+    <!-- SECCIÓN 1: NOVEDADES DE LA ACTUALIZACIÓN -->
+    <section id="novedades" class="report-section">
+      <h2 class="section-title">
+        <span>🚀</span> Novedades de la Versión Actual (Commit <code>af2c32a</code>)
+      </h2>
+      <p>
+        El repositorio fue actualizado significativamente con la rama <code>mi-version-aut-recorrido-perfil</code>.
+        La aplicación pasó de ser un prototipo de consulta a una <strong>suite operativa multiusuario completa</strong>.
+      </p>
+
+      <div class="grid-3">
+        <div class="card success">
+          <div class="card-header">
+            <span>Autenticación & Roles</span>
+            <span>🔐</span>
+          </div>
+          <p>
+            Sistema propio con hash <code>scrypt</code> / <code>PBKDF2</code>, cookies seguras <code>HttpOnly</code>,
+            tokens SHA-256 en BD y 3 roles diferenciados (<code>consulta</code>, <code>coordinador</code>, <code>admin</code>).
+          </p>
+        </div>
+
+        <div class="card highlight">
+          <div class="card-header">
+            <span>Perfil Territorial</span>
+            <span>⌖</span>
+          </div>
+          <p>
+            Fichas interactivas por Estado, Municipio, Distritos (Local/Federal) y Sección.
+            Cálculo determinista de ganador, márgenes, participación, competitividad y enlaces directos hash en URL.
+          </p>
+        </div>
+
+        <div class="card highlight">
+          <div class="card-header">
+            <span>Verificación de Cifras</span>
+            <span>🛡️</span>
+          </div>
+          <p>
+            Motor de auditoría de redacción: el sistema analiza cada número o porcentaje en los discursos generados
+            por el LLM y resalta visualmente las cifras respaldadas vs. dudosas.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span>Recorrido Guiado</span>
+            <span>🧭</span>
+          </div>
+          <p>
+            Tour interactivo (<code>tour.js</code>) al iniciar sesión por primera vez, adaptado dinámicamente según el
+            rol del usuario (oculta pasos restringidos para usuarios de consulta).
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span>Historial Persistente</span>
+            <span>💾</span>
+          </div>
+          <p>
+            Conversaciones de discursos guardadas en SQLite por usuario, con opciones de renombrar,
+            continuar y exportar a Word (DOCX), PDF y TXT.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span>Script de Diagnóstico</span>
+            <span>🛠️</span>
+          </div>
+          <p>
+            Script <code>verificar_instalacion.py</code> que valida archivos, sintaxis, dependencias, escritura en disco
+            y realiza pruebas unitarias de creación de usuarios en SQLite temporal.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 2: ARQUITECTURA GLOBAL DEL SISTEMA -->
+    <section id="arquitectura" class="report-section">
+      <h2 class="section-title">
+        <span>🏛️</span> Arquitectura Global del Sistema
+      </h2>
+      <p>
+        El diseño implementa una arquitectura desacoplada por capas: frontend ligero sin dependencias pesadas,
+        API REST modular en FastAPI, triple persistencia en SQLite y aislamiento estricto de llamadas de inteligencia artificial.
+      </p>
+
+      <div class="architecture-diagram">
+        <div class="arch-flow">
+          
+          <!-- Capa 1: Frontend -->
+          <div class="arch-layer">
+            <div class="layer-title">1. CAPA DE PRESENTACIÓN (Frontend Vanilla - Sin Build Step)</div>
+            <div class="layer-components">
+              <div class="comp-box">
+                <strong>app.js & styles.css</strong>
+                <span>Shell unificado, routing por tabs, renderizado de tablas y gráficas</span>
+              </div>
+              <div class="comp-box">
+                <strong>auth.js & tour.js</strong>
+                <span>Modal de acceso, creación de admin, verificación de sesión y recorrido guiado</span>
+              </div>
+              <div class="comp-box">
+                <strong>territorio.js</strong>
+                <span>Explorador geográfico, datalists dinámicos y navegación por hash</span>
+              </div>
+              <div class="comp-box">
+                <strong>discursos.js & admin.js</strong>
+                <span>Chat de redacción con auditoría de cifras y panel de gestión de usuarios</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Capa 2: Backend API -->
+          <div class="arch-layer">
+            <div class="layer-title">2. CAPA DE SERVICIO & CONTROL (FastAPI + Middleware)</div>
+            <div class="layer-components">
+              <div class="comp-box">
+                <strong>main.py & lifespan</strong>
+                <span>Arranque unificado, inicialización de BD, CORS y middleware de seguridad</span>
+              </div>
+              <div class="comp-box">
+                <strong>auth.py (Router)</strong>
+                <span>Control de acceso, rate-limiting, scrypt/PBKDF2 y dependencias de rol</span>
+              </div>
+              <div class="comp-box">
+                <strong>asistente_electoral.py</strong>
+                <span>Traductor NL -> Plan JSON validado con RapidFuzz -> SQL parametrizado</span>
+              </div>
+              <div class="comp-box">
+                <strong>territorio.py & redaccion.py</strong>
+                <span>Cálculo determinista de perfiles y motor de verificación de cifras</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Capa 3: Persistencia -->
+          <div class="arch-layer">
+            <div class="layer-title">3. CAPA DE PERSISTENCIA (3 Bases de Datos SQLite Locales)</div>
+            <div class="layer-components">
+              <div class="comp-box">
+                <strong>data/electoral.db</strong>
+                <span>Resultados históricos (SLP 2024), votos, secciones e índices normalizados</span>
+              </div>
+              <div class="comp-box">
+                <strong>data/campania.db</strong>
+                <span>Áreas, metas cuantificables, personas, tareas Kanban y ponderaciones</span>
+              </div>
+              <div class="comp-box">
+                <strong>data/plataforma.db</strong>
+                <span>Usuarios, sesiones con token hash e historial de discursos auditados</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Capa 4: Servicios Externos -->
+          <div class="arch-layer">
+            <div class="layer-title">4. SERVICIOS EXTERNOS & IA</div>
+            <div class="layer-components">
+              <div class="comp-box">
+                <strong>Groq Cloud API</strong>
+                <span>Inferencia ultrarrápida (openai/gpt-oss-120b) para interpretar preguntas y redactar</span>
+              </div>
+              <div class="comp-box">
+                <strong>SerpAPI & Trafilatura</strong>
+                <span>Búsqueda periodística en Google News y extracción limpia del cuerpo de notas</span>
+              </div>
+              <div class="comp-box">
+                <strong>Google Sheets (Opcional)</strong>
+                <span>Fuente remota original para actualizar electoral.db al inicio</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN: DIAGRAMA DE FLUJO DE COMPONENTES FUNCIONALES -->
+    <section id="diagrama-flujo" class="report-section">
+      <h2 class="section-title">
+        <span>🔄</span> Diagrama de Flujo de Componentes Funcionales
+      </h2>
+      <p>
+        El siguiente diagrama ilustra el flujo de datos integral de la plataforma: desde el acceso y validación criptográfica,
+        pasando por los motores analíticos deterministas y de inteligencia artificial, hasta la persistencia y exportación.
+      </p>
+
+      <!-- DIAGRAMA SVG RESPONSIVE -->
+      <div style="width: 100%; overflow-x: auto; background: #070d18; border-radius: 12px; border: 1px solid #1e293b; padding: 20px 10px; margin: 24px 0;">
+        <svg viewBox="0 0 1160 900" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <defs>
+            <!-- Filtros de Sombra -->
+            <filter id="shadow" x="-5%" y="-10%" width="110%" height="130%">
+              <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000000" flood-opacity="0.4"/>
+            </filter>
+
+            <!-- Marcadores de Flechas -->
+            <marker id="arr-gray" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#64748b"/>
+            </marker>
+            <marker id="arr-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#38bdf8"/>
+            </marker>
+            <marker id="arr-emerald" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#10b981"/>
+            </marker>
+            <marker id="arr-amber" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f59e0b"/>
+            </marker>
+            <marker id="arr-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#a855f7"/>
+            </marker>
+            <marker id="arr-teal" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#06b6d4"/>
+            </marker>
+
+            <!-- Gradientes -->
+            <linearGradient id="g-user" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#0f172a"/>
+            </linearGradient>
+            <linearGradient id="g-auth" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#581c87"/><stop offset="100%" stop-color="#3b0764"/>
+            </linearGradient>
+            <linearGradient id="g-asist" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#0369a1"/><stop offset="100%" stop-color="#075985"/>
+            </linearGradient>
+            <linearGradient id="g-terr" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#047857"/><stop offset="100%" stop-color="#065f46"/>
+            </linearGradient>
+            <linearGradient id="g-disc" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#b45309"/><stop offset="100%" stop-color="#92400e"/>
+            </linearGradient>
+            <linearGradient id="g-camp" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#0e7490"/><stop offset="100%" stop-color="#155e75"/>
+            </linearGradient>
+            <linearGradient id="g-db" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#111827"/>
+            </linearGradient>
+          </defs>
+
+          <!-- 1. CAPA SUPERIOR: USUARIO & GATEWAY AUTH -->
+          <rect x="440" y="20" width="280" height="52" rx="8" fill="url(#g-user)" stroke="#475569" stroke-width="1.5" filter="url(#shadow)"/>
+          <text x="580" y="44" fill="#f8fafc" font-size="14" font-weight="700" text-anchor="middle">👤 Usuario (Navegador Web)</text>
+          <text x="580" y="60" fill="#94a3b8" font-size="11" text-anchor="middle">HTTP / Cookie sesion_ie (Lax, HttpOnly)</text>
+
+          <!-- Flecha Usuario -> Auth Gateway -->
+          <line x1="580" y1="72" x2="580" y2="105" stroke="#a855f7" stroke-width="2" marker-end="url(#arr-purple)"/>
+
+          <rect x="360" y="105" width="440" height="74" rx="10" fill="url(#g-auth)" stroke="#c084fc" stroke-width="1.5" filter="url(#shadow)"/>
+          <text x="580" y="128" fill="#f3e8ff" font-size="14" font-weight="700" text-anchor="middle">🔐 Control de Acceso: auth.js / backend/auth.py</text>
+          <text x="580" y="146" fill="#e9d5ff" font-size="11" text-anchor="middle">Hash scrypt / PBKDF2 · Anti-Timing · Rate Limit (8 fallos) · Token SHA-256</text>
+          <text x="580" y="164" fill="#d8b4fe" font-size="10.5" font-weight="600" text-anchor="middle">Despacho por Rol: [consulta] [coordinador] [admin] · Tour Guiado (tour.js)</text>
+
+          <!-- Flechas de Despacho desde Auth hacia los 4 Canales -->
+          <path d="M 400 179 L 400 205 L 145 205 L 145 235" fill="none" stroke="#38bdf8" stroke-width="2" marker-end="url(#arr-blue)"/>
+          <path d="M 520 179 L 520 205 L 430 205 L 430 235" fill="none" stroke="#10b981" stroke-width="2" marker-end="url(#arr-emerald)"/>
+          <path d="M 640 179 L 640 205 L 725 205 L 725 235" fill="none" stroke="#f59e0b" stroke-width="2" marker-end="url(#arr-amber)"/>
+          <path d="M 760 179 L 760 205 L 1020 205 L 1020 235" fill="none" stroke="#06b6d4" stroke-width="2" marker-end="url(#arr-teal)"/>
+
+          <!-- ==================================================================== -->
+          <!-- COLUMNA 1: ASISTENTE ELECTORAL (Text-to-Intent Determinista) -->
+          <!-- ==================================================================== -->
+          <rect x="25" y="235" width="240" height="52" rx="8" fill="url(#g-asist)" stroke="#38bdf8" stroke-width="1.5" filter="url(#shadow)"/>
+          <text x="145" y="258" fill="#f0f9ff" font-size="13" font-weight="700" text-anchor="middle">1. Asistente Electoral</text>
+          <text x="145" y="274" fill="#bae6fd" font-size="11" text-anchor="middle">Consulta en Lenguaje Natural</text>
+
+          <line x1="145" y1="287" x2="145" y2="315" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+
+          <rect x="25" y="315" width="240" height="56" rx="8" fill="#1e293b" stroke="#0284c7" stroke-width="1.5"/>
+          <text x="145" y="337" fill="#38bdf8" font-size="12" font-weight="700" text-anchor="middle">🤖 Groq LLM (gpt-oss-120b)</text>
+          <text x="145" y="354" fill="#94a3b8" font-size="10.5" text-anchor="middle">Interpreta Intención ➔ Plan JSON</text>
+          <text x="145" y="366" fill="#f59e0b" font-size="9.5" text-anchor="middle">(Sin SQL directo - Anti Alucinación)</text>
+
+          <line x1="145" y1="371" x2="145" y2="400" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+
+          <rect x="25" y="400" width="240" height="52" rx="8" fill="#1e293b" stroke="#0284c7" stroke-width="1.5"/>
+          <text x="145" y="421" fill="#e2e8f0" font-size="12" font-weight="700" text-anchor="middle">🔍 RapidFuzz (WRatio ≥ 72%)</text>
+          <text x="145" y="439" fill="#94a3b8" font-size="10.5" text-anchor="middle">Cotejo difuso vs Catálogo SLP</text>
+
+          <line x1="145" y1="452" x2="145" y2="480" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+
+          <rect x="25" y="480" width="240" height="52" rx="8" fill="#1e293b" stroke="#0284c7" stroke-width="1.5"/>
+          <text x="145" y="501" fill="#e2e8f0" font-size="12" font-weight="700" text-anchor="middle">🛡️ Constructor SQL Seguro</text>
+          <text x="145" y="519" fill="#94a3b8" font-size="10.5" text-anchor="middle">Query Parametrizada (Anti-Injection)</text>
+
+          <line x1="145" y1="532" x2="145" y2="560" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+
+          <rect x="25" y="560" width="240" height="56" rx="8" fill="#1e293b" stroke="#10b981" stroke-width="1.5"/>
+          <text x="145" y="582" fill="#34d399" font-size="12" font-weight="700" text-anchor="middle">📊 Pandas & Métricas</text>
+          <text x="145" y="598" fill="#94a3b8" font-size="10.5" text-anchor="middle">Cálculo de Margen, Ganador y %</text>
+          <text x="145" y="610" fill="#6ee7b7" font-size="9.5" text-anchor="middle">Lectura de data/electoral.db</text>
+
+          <line x1="145" y1="616" x2="145" y2="645" stroke="#38bdf8" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+
+          <rect x="25" y="645" width="240" height="48" rx="8" fill="#0c4a6e" stroke="#38bdf8" stroke-width="1.5"/>
+          <text x="145" y="667" fill="#ffffff" font-size="12" font-weight="700" text-anchor="middle">🖥️ Respuesta + Tabla de Datos</text>
+          <text x="145" y="682" fill="#7dd3fc" font-size="10" text-anchor="middle">Detalle auditado para el usuario</text>
+
+          <!-- ==================================================================== -->
+          <!-- COLUMNA 2: PERFIL TERRITORIAL & GRÁFICOS -->
+          <!-- ==================================================================== -->
+          <rect x="310" y="235" width="240" height="52" rx="8" fill="url(#g-terr)" stroke="#10b981" stroke-width="1.5" filter="url(#shadow)"/>
+          <text x="430" y="258" fill="#f0fdf4" font-size="13" font-weight="700" text-anchor="middle">2. Perfil Territorial</text>
+          <text x="430" y="274" fill="#a7f3d0" font-size="11" text-anchor="middle">territorio.py & URL Deep Links</text>
+
+          <line x1="430" y1="287" x2="430" y2="315" stroke="#10b981" stroke-width="1.5" marker-end="url(#arr-emerald)"/>
+
+          <rect x="310" y="315" width="240" height="56" rx="8" fill="#1e293b" stroke="#059669" stroke-width="1.5"/>
+          <text x="430" y="337" fill="#6ee7b7" font-size="12" font-weight="700" text-anchor="middle">🗺️ Selector Geográfico</text>
+          <text x="430" y="354" fill="#94a3b8" font-size="10.5" text-anchor="middle">Estado / Mpio / Dto Loc-Fed / Secc</text>
+          <text x="430" y="366" fill="#a7f3d0" font-size="9.5" text-anchor="middle">Rutas directas #territorio/...</text>
+
+          <line x1="430" y1="371" x2="430" y2="400" stroke="#10b981" stroke-width="1.5" marker-end="url(#arr-emerald)"/>
+
+          <rect x="310" y="400" width="240" height="52" rx="8" fill="#1e293b" stroke="#059669" stroke-width="1.5"/>
+          <text x="430" y="421" fill="#e2e8f0" font-size="12" font-weight="700" text-anchor="middle">⚖️ Métricas Deterministas</text>
+          <text x="430" y="439" fill="#94a3b8" font-size="10.5" text-anchor="middle">Participación, Margen pp y Votos</text>
+
+          <line x1="430" y1="452" x2="430" y2="480" stroke="#10b981" stroke-width="1.5" marker-end="url(#arr-emerald)"/>
+
+          <rect x="310" y="480" width="240" height="52" rx="8" fill="#1e293b" stroke="#059669" stroke-width="1.5"/>
+          <text x="430" y="501" fill="#e2e8f0" font-size="12" font-weight="700" text-anchor="middle">🏷️ Semáforo Competitividad</text>
+          <text x="430" y="519" fill="#94a3b8" font-size="10.5" text-anchor="middle">Muy reñida (&lt;3pp) ➔ Ventaja amplia</text>
+
+          <line x1="430" y1="532" x2="430" y2="560" stroke="#10b981" stroke-width="1.5" marker-end="url(#arr-emerald)"/>
+
+          <rect x="310" y="560" width="240" height="56" rx="8" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="430" y="582" fill="#fbbf24" font-size="12" font-weight="700" text-anchor="middle">📋 Control Calidad de Datos</text>
+          <text x="430" y="598" fill="#94a3b8" font-size="10.5" text-anchor="middle">Alerta si ∑ opciones ≠ Total Calc.</text>
+          <text x="430" y="610" fill="#fde68a" font-size="9.5" text-anchor="middle">Detección de Empates Exactos</text>
+
+          <line x1="430" y1="616" x2="430" y2="645" stroke="#10b981" stroke-width="1.5" marker-end="url(#arr-emerald)"/>
+
+          <!-- Conexión de Perfil Territorial hacia Redacción de Discursos -->
+          <path d="M 550 588 Q 580 588 595 440" fill="none" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4" marker-end="url(#arr-emerald)"/>
+          <text x="590" y="540" fill="#6ee7b7" font-size="9" transform="rotate(-90 590 540)">Inyecta Ficha Oficial</text>
+
+          <rect x="310" y="645" width="240" height="48" rx="8" fill="#064e3b" stroke="#10b981" stroke-width="1.5"/>
+          <text x="430" y="667" fill="#ffffff" font-size="12" font-weight="700" text-anchor="middle">📈 Ficha Territorial + Gráfica</text>
+          <text x="430" y="682" fill="#a7f3d0" font-size="10" text-anchor="middle">Enlace a metas y discursos</text>
+
+          <!-- ==================================================================== -->
+          <!-- COLUMNA 3: DISCURSOS & AUDITORÍA DE CIFRAS -->
+          <!-- ==================================================================== -->
+          <rect x="605" y="235" width="240" height="52" rx="8" fill="url(#g-disc)" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
+          <text x="725" y="258" fill="#fffbeb" font-size="13" font-weight="700" text-anchor="middle">3. Discursos & Cifras</text>
+          <text x="725" y="274" fill="#fde68a" font-size="11" text-anchor="middle">redaccion.py & Ficha Oficial</text>
+
+          <line x1="725" y1="287" x2="725" y2="315" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arr-amber)"/>
+
+          <rect x="605" y="315" width="240" height="56" rx="8" fill="#1e293b" stroke="#d97706" stroke-width="1.5"/>
+          <text x="725" y="337" fill="#fbbf24" font-size="12" font-weight="700" text-anchor="middle">📝 Selector de Formato</text>
+          <text x="725" y="354" fill="#94a3b8" font-size="10.5" text-anchor="middle">Mitin · Debate · WhatsApp · Boletín</text>
+          <text x="725" y="366" fill="#fde68a" font-size="9.5" text-anchor="middle">+ Inyección de Ficha Territorial</text>
+
+          <line x1="725" y1="371" x2="725" y2="400" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arr-amber)"/>
+
+          <rect x="605" y="400" width="240" height="52" rx="8" fill="#1e293b" stroke="#d97706" stroke-width="1.5"/>
+          <text x="725" y="421" fill="#38bdf8" font-size="12" font-weight="700" text-anchor="middle">🤖 Groq LLM (Redacción)</text>
+          <text x="725" y="439" fill="#94a3b8" font-size="10.5" text-anchor="middle">Genera borrador ajustado al tono</text>
+
+          <line x1="725" y1="452" x2="725" y2="480" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arr-amber)"/>
+
+          <rect x="605" y="480" width="240" height="52" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="1.5"/>
+          <text x="725" y="501" fill="#f87171" font-size="12" font-weight="700" text-anchor="middle">🛡️ Motor de Verificación Regex</text>
+          <text x="725" y="519" fill="#94a3b8" font-size="10.5" text-anchor="middle">Extrae números y compara vs Ficha</text>
+
+          <line x1="725" y1="532" x2="725" y2="560" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arr-amber)"/>
+
+          <rect x="605" y="560" width="240" height="56" rx="8" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="725" y="582" fill="#e2e8f0" font-size="12" font-weight="700" text-anchor="middle">✅ Respaldada vs ⚠️ Dudosa</text>
+          <text x="725" y="598" fill="#94a3b8" font-size="10.5" text-anchor="middle">Resaltado visual en el frontend</text>
+          <text x="725" y="610" fill="#fde68a" font-size="9.5" text-anchor="middle">Botón "Corregir cifras" (Loop rápido)</text>
+
+          <line x1="725" y1="616" x2="725" y2="645" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arr-amber)"/>
+
+          <rect x="605" y="645" width="240" height="48" rx="8" fill="#78350f" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="725" y="667" fill="#ffffff" font-size="12" font-weight="700" text-anchor="middle">📄 Exportación Word / PDF / TXT</text>
+          <text x="725" y="682" fill="#fde68a" font-size="10" text-anchor="middle">Con tabla de auditoría en el informe</text>
+
+          <!-- ==================================================================== -->
+          <!-- COLUMNA 4: SEMÁFORO DE PRENSA & CAMPAÑA -->
+          <!-- ==================================================================== -->
+          <rect x="900" y="235" width="235" height="52" rx="8" fill="url(#g-camp)" stroke="#06b6d4" stroke-width="1.5" filter="url(#shadow)"/>
+          <text x="1017" y="258" fill="#ecfeff" font-size="13" font-weight="700" text-anchor="middle">4. Semáforo & Campaña</text>
+          <text x="1017" y="274" fill="#a5f3fc" font-size="11" text-anchor="middle">Monitoreo y Operación</text>
+
+          <line x1="1017" y1="287" x2="1017" y2="315" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr-teal)"/>
+
+          <rect x="900" y="315" width="235" height="56" rx="8" fill="#1e293b" stroke="#0891b2" stroke-width="1.5"/>
+          <text x="1017" y="337" fill="#22d3ee" font-size="12" font-weight="700" text-anchor="middle">📰 SerpAPI & Trafilatura</text>
+          <text x="1017" y="354" fill="#94a3b8" font-size="10.5" text-anchor="middle">Búsqueda Google News por fechas</text>
+          <text x="1017" y="366" fill="#a5f3fc" font-size="9.5" text-anchor="middle">Extracción limpia del cuerpo</text>
+
+          <line x1="1017" y1="371" x2="1017" y2="400" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr-teal)"/>
+
+          <rect x="900" y="400" width="235" height="52" rx="8" fill="#1e293b" stroke="#0891b2" stroke-width="1.5"/>
+          <text x="1017" y="421" fill="#e2e8f0" font-size="12" font-weight="700" text-anchor="middle">🚦 Clasificador de Tono</text>
+          <text x="1017" y="439" fill="#94a3b8" font-size="10.5" text-anchor="middle">Groq (LLM) o SpaCy léxico fallback</text>
+
+          <line x1="1017" y1="452" x2="1017" y2="480" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr-teal)"/>
+
+          <rect x="900" y="480" width="235" height="52" rx="8" fill="#1e293b" stroke="#0891b2" stroke-width="1.5"/>
+          <text x="1017" y="501" fill="#e2e8f0" font-size="12" font-weight="700" text-anchor="middle">📋 Tablero de Campaña</text>
+          <text x="1017" y="519" fill="#94a3b8" font-size="10.5" text-anchor="middle">Metas Territoriales + Avance %</text>
+
+          <line x1="1017" y1="532" x2="1017" y2="560" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr-teal)"/>
+
+          <rect x="900" y="560" width="235" height="56" rx="8" fill="#1e293b" stroke="#0891b2" stroke-width="1.5"/>
+          <text x="1017" y="582" fill="#e2e8f0" font-size="12" font-weight="700" text-anchor="middle">📌 Kanban & Prioridades</text>
+          <text x="1017" y="598" fill="#94a3b8" font-size="10.5" text-anchor="middle">Peso (1 a 8) · Estados · Fechas</text>
+          <text x="1017" y="610" fill="#a5f3fc" font-size="9.5" text-anchor="middle">Modo Demo para pruebas (demo.py)</text>
+
+          <line x1="1017" y1="616" x2="1017" y2="645" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arr-teal)"/>
+
+          <rect x="900" y="645" width="235" height="48" rx="8" fill="#164e63" stroke="#06b6d4" stroke-width="1.5"/>
+          <text x="1017" y="667" fill="#ffffff" font-size="12" font-weight="700" text-anchor="middle">📑 Reportes PDF & Tableros</text>
+          <text x="1017" y="682" fill="#a5f3fc" font-size="10" text-anchor="middle">Posicionamiento y Avance Operativo</text>
+
+          <!-- ==================================================================== -->
+          <!-- CAPA INFERIOR: PERSISTENCIA EN 3 BASES DE DATOS SQLITE -->
+          <!-- ==================================================================== -->
+          <rect x="25" y="740" width="1110" height="135" rx="12" fill="url(#g-db)" stroke="#334155" stroke-width="2" filter="url(#shadow)"/>
+          <text x="580" y="766" fill="#f8fafc" font-size="14" font-weight="800" text-anchor="middle">🗄️ PERSISTENCIA LOCAL: CARPETA data/ (3 BASES DE DATOS SQLITE)</text>
+
+          <!-- BD 1 -->
+          <rect x="45" y="785" width="330" height="75" rx="8" fill="#0f172a" stroke="#0284c7" stroke-width="1.5"/>
+          <text x="210" y="808" fill="#38bdf8" font-size="13" font-weight="700" text-anchor="middle">electoral.db</text>
+          <text x="210" y="826" fill="#94a3b8" font-size="11" text-anchor="middle">Resultados electorales oficiales (SLP 2024)</text>
+          <text x="210" y="842" fill="#64748b" font-size="10" text-anchor="middle">Índices normalizados (__norm_*)</text>
+
+          <!-- BD 2 -->
+          <rect x="415" y="785" width="330" height="75" rx="8" fill="#0f172a" stroke="#059669" stroke-width="1.5"/>
+          <text x="580" y="808" fill="#34d399" font-size="13" font-weight="700" text-anchor="middle">campania.db</text>
+          <text x="580" y="826" fill="#94a3b8" font-size="11" text-anchor="middle">Áreas, Personas, Metas y Tareas Kanban</text>
+          <text x="580" y="842" fill="#64748b" font-size="10" text-anchor="middle">Migraciones de esquema no destructivas</text>
+
+          <!-- BD 3 -->
+          <rect x="785" y="785" width="330" height="75" rx="8" fill="#0f172a" stroke="#c084fc" stroke-width="1.5"/>
+          <text x="950" y="808" fill="#c084fc" font-size="13" font-weight="700" text-anchor="middle">plataforma.db</text>
+          <text x="950" y="826" fill="#94a3b8" font-size="11" text-anchor="middle">Usuarios, Sesiones SHA-256 e Historial Discursos</text>
+          <text x="950" y="842" fill="#64748b" font-size="10" text-anchor="middle">Auditoría persistente de redacción</text>
+
+          <!-- Conexiones a BDs -->
+          <path d="M 145 693 L 145 785" fill="none" stroke="#0284c7" stroke-width="1.5" stroke-dasharray="3" marker-end="url(#arr-blue)"/>
+          <path d="M 430 693 L 430 735 L 250 735 L 250 785" fill="none" stroke="#059669" stroke-width="1.5" stroke-dasharray="3" marker-end="url(#arr-emerald)"/>
+          <path d="M 725 693 L 725 785" fill="none" stroke="#c084fc" stroke-width="1.5" stroke-dasharray="3" marker-end="url(#arr-purple)"/>
+          <path d="M 1017 693 L 1017 735 L 600 735 L 600 785" fill="none" stroke="#06b6d4" stroke-width="1.5" stroke-dasharray="3" marker-end="url(#arr-teal)"/>
+        </svg>
+      </div>
+
+      <!-- DESGLOSE PASO A PASO DE LOS COMPONENTES FUNCIONALES -->
+      <h3 class="sub-title">Desglose de los Canales Funcionales</h3>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span>Canal 1: Asistente Determinista</span>
+            <span>✦</span>
+          </div>
+          <p>
+            Garantiza que ninguna cifra provenga de alucinación:
+          </p>
+          <ol style="margin-left: 18px; font-size: 0.88rem;">
+            <li>El usuario envía una consulta en lenguaje coloquial (ej. <em>"¿Dónde estuvo más cerrado el voto en Valles?"</em>).</li>
+            <li>Groq interpreta la intención y devuelve un <code>Plan JSON</code> estructurado.</li>
+            <li><code>Catalogo.resolver</code> valida entidades con <code>rapidfuzz</code> (umbral WRatio 72%).</li>
+            <li>Se compila una consulta SQL con marcas de sustitución <code>?</code> (evita inyección SQL).</li>
+            <li>Pandas ejecuta la consulta en <code>data/electoral.db</code> y calcula los márgenes de forma exacta.</li>
+          </ol>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span>Canal 2: Perfil Territorial</span>
+            <span>⌖</span>
+          </div>
+          <p>
+            Genera la radiografía electoral y de campaña de cualquier demarcación:
+          </p>
+          <ol style="margin-left: 18px; font-size: 0.88rem;">
+            <li>Selección dinámica o navegación por enlace permanente (<code>#territorio/municipio/MATEHUALA</code>).</li>
+            <li>Cálculo de participación: <code>votos_emitidos / LISTA_NOMINAL</code>.</li>
+            <li>Clasificación de competitividad (desde <em>Empate exacto</em> hasta <em>Ventaja amplia</em>).</li>
+            <li>Identificación de las secciones más disputadas de la demarcación.</li>
+            <li>Genera la <code>FICHA DE DATOS VERIFICADOS</code> que alimenta al módulo de discursos.</li>
+          </ol>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span>Canal 3: Discursos y Auditoría</span>
+            <span>✍️</span>
+          </div>
+          <p>
+            Redacción asistida con control de calidad cuantitativo:
+          </p>
+          <ol style="margin-left: 18px; font-size: 0.88rem;">
+            <li>Selección de formato (Mitin, Debate, WhatsApp, Boletín) y demarcación.</li>
+            <li>El LLM recibe la ficha de datos oficiales con instrucción estricta de no inventar números.</li>
+            <li>Al recibir el borrador, el motor regex de <code>redaccion.py</code> extrae todas las cantidades.</li>
+            <li>Se cotejan contra la ficha: las cifras no encontradas se marcan en rojo como <code>no_respaldadas</code>.</li>
+            <li>El botón <em>"Corregir cifras"</em> reinicia el prompt instruyendo al LLM a subsanar únicamente los datos dudosos.</li>
+          </ol>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span>Canal 4: Semáforo y Operación</span>
+            <span>◉</span>
+          </div>
+          <p>
+            Monitoreo mediático y control de ejecución de campaña:
+          </p>
+          <ol style="margin-left: 18px; font-size: 0.88rem;">
+            <li>Búsqueda temporal vía SerpAPI y extracción del contenido editorial con Trafilatura.</li>
+            <li>Clasificación de tono (positivo, neutro, negativo) con LLM o fallback léxico SpaCy.</li>
+            <li>Tablero Kanban con tareas asociadas a metas territoriales, peso relativo (1 a 8) y prioridades.</li>
+            <li>Generación de informes ejecutivos en PDF de alta calidad mediante ReportLab.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 3: MODELO DE SEGURIDAD Y CONTROL DE ACCESO -->
+    <section id="seguridad" class="report-section">
+      <h2 class="section-title">
+        <span>🛡️</span> Modelo de Seguridad, Autenticación y RBAC
+      </h2>
+      <p>
+        La implementación en <code>backend/auth.py</code> incorpora prácticas alineadas con los estándares OWASP:
+      </p>
+
+      <div class="grid-2">
+        <div>
+          <h3 class="sub-title">1. Criptografía y Sesiones</h3>
+          <ul>
+            <li><strong>Hashing adaptativo:</strong> Utiliza <code>scrypt</code> (N=16384, r=8, p=1) por defecto. Si OpenSSL no dispone de scrypt, degrada de forma segura a <code>PBKDF2-HMAC-SHA256</code> con 600,000 iteraciones.</li>
+            <li><strong>Protección contra Timing Attacks:</strong> Cuando se consulta un usuario inexistente, se ejecuta <code>_hash_falso()</code> para mantener un tiempo de respuesta constante y evitar la enumeración de usuarios.</li>
+            <li><strong>Manejo de Tokens:</strong> Las cookies <code>sesion_ie</code> almacenan un token aleatorio criptográficamente seguro (<code>secrets.token_urlsafe(32)</code>). En la base de datos solo se almacena su huella SHA-256.</li>
+            <li><strong>Cabeceras y Flags:</strong> Cookies con <code>HttpOnly</code>, <code>SameSite=Lax</code> y soporte de <code>COOKIE_SECURE=1</code> para HTTPS en producción. Cabeceras HTTP automáticas: <code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: DENY</code> y <code>Referrer-Policy: same-origin</code>.</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="sub-title">2. Matriz de Roles y Permisos (RBAC)</h3>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Módulo / Acción</th>
+                  <th>Consulta</th>
+                  <th>Coordinador</th>
+                  <th>Admin</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Asistente Electoral</td>
+                  <td>✅ Sí</td>
+                  <td>✅ Sí</td>
+                  <td>✅ Sí</td>
+                </tr>
+                <tr>
+                  <td>Perfil Territorial</td>
+                  <td>✅ Sí</td>
+                  <td>✅ Sí</td>
+                  <td>✅ Sí</td>
+                </tr>
+                <tr>
+                  <td>Resultados Gráficos</td>
+                  <td>✅ Sí</td>
+                  <td>✅ Sí</td>
+                  <td>✅ Sí</td>
+                </tr>
+                <tr>
+                  <td>Ver Tablero de Campaña</td>
+                  <td>✅ Sí</td>
+                  <td>✅ Sí</td>
+                  <td>✅ Sí</td>
+                </tr>
+                <tr>
+                  <td>Editar Metas y Tareas</td>
+                  <td>❌ No</td>
+                  <td>✅ Sí</td>
+                  <td>✅ Sí</td>
+                </tr>
+                <tr>
+                  <td>Semáforo de Noticias</td>
+                  <td>❌ No</td>
+                  <td>✅ Sí</td>
+                  <td>✅ Sí</td>
+                </tr>
+                <tr>
+                  <td>Redacción de Discursos</td>
+                  <td>❌ No</td>
+                  <td>✅ Sí</td>
+                  <td>✅ Sí</td>
+                </tr>
+                <tr>
+                  <td>Gestión de Usuarios</td>
+                  <td>❌ No</td>
+                  <td>❌ No</td>
+                  <td>✅ Sí</td>
+                </tr>
+                <tr>
+                  <td>Modo Demostración</td>
+                  <td>❌ No</td>
+                  <td>❌ No</td>
+                  <td>✅ Sí</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warning">
+        <strong>Bloqueo por Fuerza Bruta (Rate Limiting)</strong>
+        El backend bloquea intentos tras 8 fallos por usuario o 30 por IP en una ventana de 10 minutos (600 s).
+        <em>Nota técnica:</em> Este contador reside actualmente en la memoria del proceso, por lo que en entornos con múltiples trabajadores (multi-worker uvicorn) requerirá persistirse en SQLite o Redis.
+      </div>
+    </section>
+
+    <!-- SECCIÓN 4: ANÁLISIS DE MÓDULOS -->
+    <section id="modulos" class="report-section">
+      <h2 class="section-title">
+        <span>📦</span> Análisis Detallado de Módulos Funcionales
+      </h2>
+
+      <!-- Módulo 1: Asistente Electoral -->
+      <div class="card" style="margin-bottom: 20px;">
+        <h3 class="sub-title" style="margin-top: 0;">1. Asistente Electoral (<code>asistente_electoral.py</code>)</h3>
+        <p>
+          <strong>Principio clave:</strong> <em>El LLM interpreta la pregunta, pero Python calcula y ejecuta.</em>
+        </p>
+        <p>
+          El modelo de lenguaje nunca genera código SQL directamente. El proceso sigue un estricto pipeline:
+        </p>
+        <ol>
+          <li>El usuario envía una consulta en lenguaje natural (ej. <em>"¿Quién ganó en Matehuala y con qué diferencia?"</em>).</li>
+          <li>El LLM devuelve un <strong>Plan JSON</strong> estructurado con dimensiones, filtros y métricas.</li>
+          <li><code>Catalogo.resolver</code> valida cada entidad geográfica o política usando <strong>distancia difusa (RapidFuzz WRatio)</strong> contra el catálogo maestro de San Luis Potosí (umbral de coincidencia: 72%).</li>
+          <li>Se genera una consulta SQL parametrizada protegida contra inyección SQL.</li>
+          <li>Los cálculos de porcentajes y márgenes se realizan en memoria con <strong>Pandas</strong> de forma determinista.</li>
+        </ol>
+      </div>
+
+      <!-- Módulo 2: Perfil Territorial -->
+      <div class="card" style="margin-bottom: 20px;">
+        <h3 class="sub-title" style="margin-top: 0;">2. Perfil Territorial (<code>territorio.py</code>)</h3>
+        <p>
+          Genera fichas integrales para cualquier unidad territorial (Estado, Municipio, Distrito Local, Distrito Federal, Sección).
+        </p>
+        <ul>
+          <li><strong>Métricas de Votación:</strong> Votos emitidos, nulos, no registrados y lista nominal.</li>
+          <li><strong>Cálculo de Porcentaje:</strong> <code>votos_opcion / TOTAL_VOTOS_CALCULADOS * 100</code>.</li>
+          <li><strong>Participación Ciudadana:</strong> <code>votos_emitidos / LISTA_NOMINAL * 100</code>.</li>
+          <li><strong>Clasificación de Competitividad:</strong>
+            <code>Empate exacto</code> (margen = 0),
+            <code>Muy reñida</code> (&lt; 3 pp),
+            <code>Competida</code> (&lt; 8 pp),
+            <code>Ventaja clara</code> (&lt; 15 pp),
+            <code>Ventaja amplia</code> (≥ 15 pp).
+          </li>
+          <li><strong>Calidad de Datos:</strong> Alerta automática si la suma de opciones difiere del total calculado en la base.</li>
+          <li><strong>Integración con Campaña:</strong> Vincula metas específicas asignadas a dicho territorio.</li>
+        </ul>
+      </div>
+
+      <!-- Módulo 3: Resultados Gráficos -->
+      <div class="card" style="margin-bottom: 20px;">
+        <h3 class="sub-title" style="margin-top: 0;">3. Resultados Gráficos (<code>resultados_graficos.py</code>)</h3>
+        <p>
+          Módulo de visualización comparativa que permite analizar tendencias temporales, voto diferenciado entre cargos
+          (Presidencia vs. Alcaldía vs. Diputaciones) y simulación de coaliciones políticas con cálculo automático de porcentajes agrupados.
+        </p>
+      </div>
+
+      <!-- Módulo 4: Semáforo de Posicionamiento -->
+      <div class="card" style="margin-bottom: 20px;">
+        <h3 class="sub-title" style="margin-top: 0;">4. Semáforo de Posicionamiento (<code>posicionamiento.py</code> & <code>informes.py</code>)</h3>
+        <p>
+          Monitoreo de prensa mediante SerpAPI y Trafilatura. Realiza análisis de tono (positivo, neutro, negativo) y encuadres temáticos.
+          Incluye soporte para <strong>comparación lado a lado de dos figuras públicas</strong> y exportación de reportes ejecutivos en PDF de alta calidad tipográfica mediante ReportLab.
+        </p>
+      </div>
+
+      <!-- Módulo 5: Campaña y Tareas -->
+      <div class="card">
+        <h3 class="sub-title" style="margin-top: 0;">5. Campaña y Tareas (<code>campania.py</code>)</h3>
+        <p>
+          Tablero ejecutivo y Kanban para la gestión operativa:
+        </p>
+        <ul>
+          <li><strong>Estructura jerárquica:</strong> Áreas ➔ Personas ➔ Metas (con indicador y objetivo numérico) ➔ Tareas.</li>
+          <li><strong>Ponderación:</strong> Tareas con prioridad (baja, media, alta, crítica) y peso (1 a 8) para medir el avance real de las metas.</li>
+          <li><strong>Modo Demo:</strong> Sembrado y limpieza automática de datos de prueba para entrenamiento de equipos.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 5: VERIFICACIÓN DE CIFRAS EN DISCURSOS -->
+    <section id="discursos" class="report-section">
+      <h2 class="section-title">
+        <span>✍️</span> Verificación de Cifras en Discursos (Anti-Alucinación)
+      </h2>
+      <p>
+        Una de las innovaciones más destacadas de la plataforma es el subsistema en <code>backend/redaccion.py</code>.
+        Resuelve el riesgo común donde un modelo de lenguaje "inventa" estadísticas creíbles pero falsas.
+      </p>
+
+      <div class="grid-2">
+        <div class="card highlight">
+          <div class="card-header">
+            <span>Flujo de Auditoría de Cifras</span>
+            <span>⚙️</span>
+          </div>
+          <ol style="margin-left: 16px;">
+            <li>El usuario selecciona un territorio (ej. <em>Municipio de Matehuala</em>).</li>
+            <li>El backend genera una <code>FICHA DE DATOS VERIFICADOS</code> con cifras oficiales de la base SQLite.</li>
+            <li>El prompt del sistema instruye al LLM a usar <strong>únicamente</strong> esas cifras.</li>
+            <li>Al recibir el borrador, una expresión regular extrae todos los números, porcentajes y cifras &gt; 100.</li>
+            <li>Se cotejan contra los datos oficiales y lo redactado por el usuario.</li>
+            <li>Las cifras que no coinciden se catalogan como <code>no_respaldadas</code>.</li>
+          </ol>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span>Ajuste Automático: "Corregir Cifras"</span>
+            <span>🔄</span>
+          </div>
+          <p>
+            Si el frontend detecta cifras dudosas, habilita el botón especial <strong>Corregir cifras</strong>.
+          </p>
+          <p>
+            Al hacer clic, el sistema reescribe el prompt inyectando explícitamente la lista de valores dudosos detectados:
+          </p>
+          <pre><code>instruccion = ("Reescribe el texto corrigiendo las cifras "
+               "que no coinciden con los datos... "
+               f"Cifras a corregir: {dudosas}.")</code></pre>
+          <p>
+            Las exportaciones a Word y PDF adjuntan una tabla con el sello de auditoría de cifras.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 6: MODELO DE DATOS Y ESQUEMAS SQLITE -->
+    <section id="datos" class="report-section">
+      <h2 class="section-title">
+        <span>🗄️</span> Arquitectura de Persistencia y Bases de Datos
+      </h2>
+      <p>
+        La información se distribuye en tres bases de datos SQLite dentro del directorio <code>data/</code>:
+      </p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-header">
+            <span>1. electoral.db</span>
+            <span>🗳️</span>
+          </div>
+          <p><strong>Propósito:</strong> Datos electorales históricos.</p>
+          <p><strong>Ciclo de vida:</strong> Se descarga y regenera al iniciar la aplicación si se conecta a Google Sheets.</p>
+          <p><strong>Contenido:</strong> Tabla <code>resultados</code> con índices normalizados en <code>__norm_entidad</code>, <code>__norm_municipio</code>, etc.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span>2. campania.db</span>
+            <span>📋</span>
+          </div>
+          <p><strong>Propósito:</strong> Planificación estratégica de la campaña.</p>
+          <p><strong>Ciclo de vida:</strong> Persistente. Cuenta con migraciones no destructivas automáticas.</p>
+          <p><strong>Tablas:</strong> <code>areas</code>, <code>personas</code>, <code>metas</code>, <code>tareas</code>.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span>3. plataforma.db</span>
+            <span>👥</span>
+          </div>
+          <p><strong>Propósito:</strong> Usuarios, sesiones y contenido generado.</p>
+          <p><strong>Ciclo de vida:</strong> Persistente. Crítico para la operación del sistema.</p>
+          <p><strong>Tablas:</strong> <code>usuarios</code>, <code>sesiones_auth</code>, <code>discursos</code>, <code>discurso_mensajes</code>.</p>
+        </div>
+      </div>
+
+      <h3 class="sub-title">Esquema DDL de <code>plataforma.db</code> (Usuarios & Historial)</h3>
+      <pre><code>CREATE TABLE usuarios (
+    id INTEGER PRIMARY KEY,
+    usuario TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    nombre TEXT NOT NULL DEFAULT '',
+    clave_hash TEXT NOT NULL,
+    rol TEXT NOT NULL CHECK (rol IN ('admin', 'coordinador', 'consulta')),
+    activo INTEGER NOT NULL DEFAULT 1,
+    creado TEXT NOT NULL,
+    ultimo_acceso TEXT
+);
+
+CREATE TABLE sesiones_auth (
+    token_hash TEXT PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    creado TEXT NOT NULL,
+    expira TEXT NOT NULL
+);
+
+CREATE TABLE discursos (
+    id INTEGER PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    titulo TEXT NOT NULL DEFAULT 'Nuevo discurso',
+    formato TEXT NOT NULL DEFAULT 'libre',
+    territorio TEXT,
+    creado TEXT NOT NULL,
+    actualizado TEXT NOT NULL
+);
+
+CREATE TABLE discurso_mensajes (
+    id INTEGER PRIMARY KEY,
+    discurso_id INTEGER NOT NULL REFERENCES discursos(id) ON DELETE CASCADE,
+    rol TEXT NOT NULL CHECK (rol IN ('user', 'assistant')),
+    contenido TEXT NOT NULL,
+    verificacion TEXT,
+    creado TEXT NOT NULL
+);</code></pre>
+    </section>
+
+    <!-- SECCIÓN 7: EVALUACIÓN Y RECOMENDACIONES -->
+    <section id="evaluacion" class="report-section">
+      <h2 class="section-title">
+        <span>⚖️</span> Evaluación Técnica y Recomendaciones de Mejora
+      </h2>
+
+      <div class="callout danger">
+        <strong>Alerta Crítica de Seguridad: Claves en <code>.env.example</code></strong>
+        El archivo <code>.env.example</code> del proyecto contiene claves que parecen reales de <code>GROQ_API_KEY</code> y <code>SERPAPI_KEY</code>.
+        <br />
+        <strong>Acción inmediata requerida:</strong> Revocar estas claves en los paneles de Groq y SerpAPI y sustituirlas en <code>.env.example</code> por textos de marcador de posición como <code>GROQ_API_KEY=tu_clave_aqui</code>.
+      </div>
+
+      <div class="callout warning">
+        <strong>Advertencia de Entorno Local: <code>.venv</code> creado en macOS</strong>
+        Se detectó que el directorio <code>.venv</code> actual contiene enlaces simbólicos apuntando a <code>/Library/Developer/CommandLineTools/usr/bin/python3</code> (ruta de macOS). Al ejecutar en un entorno Linux, este entorno virtual no funcionará.
+        <br />
+        <strong>Solución:</strong> Recrear el entorno virtual en la máquina Linux ejecutando:
+        <pre><code>python3 -m venv .venv --clear
+source .venv/bin/activate
+pip install -r requirements.txt
+python verificar_instalacion.py</code></pre>
+      </div>
+
+      <div class="grid-2">
+        <div class="card success">
+          <div class="card-header">
+            <span>Puntos Fuertes Destacados</span>
+            <span>⭐</span>
+          </div>
+          <ul>
+            <li><strong>Prevención de Inyección SQL y Alucinación:</strong> Arquitectura determinista de dos pasos (Intención JSON ➔ SQL Parametrizado).</li>
+            <li><strong>Frontend Ultraligero:</strong> Sin dependencias de Node.js/npm; el servidor FastAPI entrega directamente los archivos estáticos optimizados.</li>
+            <li><strong>Degradación Elegante:</strong> Respaldo léxico si falla el LLM; modelo SpaCy sentencizer básico si no hay descarga del modelo completo; compatibilidad con LibreSSL mediante PBKDF2.</li>
+            <li><strong>Separación Estricta de Roles:</strong> Permisos validados en el backend mediante dependencias de FastAPI (<code>Depends(auth.requiere("..."))</code>).</li>
+          </ul>
+        </div>
+
+        <div class="card warning">
+          <div class="card-header">
+            <span>Oportunidades de Mejora para Producción</span>
+            <span>📈</span>
+          </div>
+          <ul>
+            <li><strong>Despliegue Multi-Worker:</strong> El control de intentos fallidos de login (rate limiting) está en memoria; para producción con múltiples workers de Uvicorn, debe trasladarse a una tabla SQLite o Redis.</li>
+            <li><strong>Módulo Cartográfico:</strong> La pestaña <code>cartografia</code> continúa como placeholder. Se puede implementar rápidamente con <strong>Leaflet.js</strong> consumiendo archivos GeoJSON de las secciones electorales del INE/CEEPAC.</li>
+            <li><strong>Pruebas Automatizadas:</strong> Aunque existe <code>verificar_instalacion.py</code>, convendría añadir una suite con <code>pytest</code> para validar cálculos electorales y endpoints ante cambios futuros.</li>
+            <li><strong>Persistencia de Sesiones de Chat:</strong> Las instancias de <code>AsistenteElectoral</code> en memoria expiran por TTL (3h), pero un reinicio del servidor borra el contexto de la conversación activa del asistente.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <footer>
+    <p>Plataforma de Inteligencia Electoral · Reporte Técnico Generado Automáticamente · Septiembre 2026</p>
+  </footer>
+
+</body>
+</html>

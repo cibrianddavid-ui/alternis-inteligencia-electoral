@@ -79,6 +79,7 @@ async function showProfile(nivel, unidad, anio) {
     selectedElection = profile.principal || profile.elecciones[0]?.tipo || null;
     history.replaceState(null, '', profileHash(nivel, unidad, profile.anio));
     renderProfile(profile, linked);
+    window.TerritorioActivo?.set({ nivel, unidad, anio: profile.anio }, { source: 'perfil' });
     territoryStatus.textContent = '';
   } catch (error) {
     currentProfile = null;
@@ -126,8 +127,10 @@ function renderProfile(profile, linkedGoals) {
     ${renderSectionsTable(profile)}
     ${renderMunicipalities(profile)}
     ${renderHistory(profile)}
-    ${renderLinkedGoals(profile, linkedGoals, canWrite)}`;
+    ${renderLinkedGoals(profile, linkedGoals, canWrite)}
+    <div id="tp-analysis-host"></div>`;
   drawElection();
+  loadTerritoryAnalysis(profile);
 }
 
 function drawElection() {
@@ -198,6 +201,143 @@ function renderLinkedGoals(profile, goals, canWrite) {
   </article>`;
 }
 
+// ------------------------------------------------------------------ análisis del territorio
+// Voto diferenciado y evolución. Las cifras las calcula el servidor; el texto lo redacta el modelo y se verifica.
+const AUTO_ANALYSIS = false; // true: redacta el análisis al abrir cada perfil (más espera y más uso del modelo)
+let analysisToken = 0;
+let lastAnalysisText = '';
+
+const optionSwatch = (bloc) => `<span class="swatch" style="background:${escapeHtml(bloc.color)}" aria-hidden="true"></span>`;
+const oneDecimal = (value) => Number(value).toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const signedPoints = (value) => (value === null || value === undefined ? '—' : `${value > 0.05 ? '+' : value < -0.05 ? '−' : ''}${oneDecimal(Math.abs(value))}`);
+const deltaClass = (value) => (value === null || value === undefined || Math.abs(value) < 0.1 ? '' : value > 0 ? 'tp-up' : 'tp-down');
+const optionLabel = (data, key) => data.partidos.find(item => item.clave === key)?.etiqueta || key;
+
+function renderAnalysisCard(data) {
+  const ref = escapeHtml(data.referencia_etiqueta);
+  const top = data.partidos;
+  const delta = data.diferencias.length ? `
+    <h4>Diferencia frente a ${ref}</h4>
+    <p class="tp-note">Puntos porcentuales: con signo más, esa opción tuvo mayor porcentaje que en ${ref}. El índice resume diferencias de porcentajes entre opciones; 0 significa idéntico. No mide transferencias individuales de votos.</p>
+    <div class="tp-table-wrap"><table class="tp-table"><thead><tr><th>Elección</th>${top.map(item => `<th>${optionSwatch(item)}${escapeHtml(item.etiqueta)}</th>`).join('')}<th>Índice</th><th>Participación</th></tr></thead><tbody>
+    ${data.diferencias.map(row => `<tr><td>${escapeHtml(row.etiqueta)}</td>${top.map(item => `<td class="${deltaClass(row.por_partido[item.clave])}">${signedPoints(row.por_partido[item.clave])}</td>`).join('')}<td><strong>${oneDecimal(row.indice)}</strong></td><td class="${deltaClass(row.participacion_pp)}">${signedPoints(row.participacion_pp)}</td></tr>`).join('')}
+    </tbody></table></div>` : '';
+
+  const s = data.secciones;
+  const sections = s ? `
+    <h4>Secciones donde cambia el ganador</h4>
+    <p class="tp-note">De ${int(s.evaluadas)} secciones con al menos ${s.minimo_votos} votos, en ${int(s.iguales_en_todas)} ganó la misma opción registrada en todas las elecciones.</p>
+    <div class="tp-table-wrap"><table class="tp-table tp-wrap"><thead><tr><th>Elección</th><th>Con otro ganador</th><th>Cambio más frecuente</th><th>Secciones grandes con cambio</th></tr></thead><tbody>
+    ${s.cambios.map(item => { const flow = item.flujos[0]; return `<tr><td>${escapeHtml(item.etiqueta)}</td><td>${int(item.distintas)} de ${int(item.evaluadas)} (${pct(item.pct_distintas)})</td>
+      <td>${flow ? `En ${int(flow.secciones)} secciones ganó ${escapeHtml(optionLabel(data, flow.en_referencia))} en ${ref} y ${escapeHtml(optionLabel(data, flow.en_otra))} aquí` : '—'}</td>
+      <td>${item.ejemplos.map(e => `<button class="tp-link" type="button" data-open="seccion" data-value="${escapeHtml(e.seccion)}">${escapeHtml(e.seccion)}</button>`).join(', ') || '—'}</td></tr>`; }).join('')}
+    </tbody></table></div>` : '';
+
+  const history = data.historico ? `
+    <h4>Evolución entre años</h4>
+    <div class="tp-table-wrap"><table class="tp-table"><thead><tr><th>Elección</th><th>Año</th><th>Ganó</th><th>% del ganador</th><th>Participación</th></tr></thead><tbody>
+    ${Object.values(data.historico).flatMap(h => h.anios.map(row => `<tr><td>${escapeHtml(h.etiqueta)}</td><td>${escapeHtml(row.anio)}</td><td>${escapeHtml(optionLabel(data, row.ganador))}</td><td>${pct(row.pct[row.ganador])}</td><td>${pct(row.participacion_pct)}</td></tr>`)).join('')}
+    </tbody></table></div><p class="tp-note">Las coaliciones y la distritación pueden cambiar entre años: verifica que las opciones y territorios sean comparables.</p>`
+    : `<h4>Evolución entre años</h4><p class="tp-note">La base solo tiene datos de ${escapeHtml(data.anio || 'un año')}. Cuando se carguen elecciones anteriores, la evolución aparecerá aquí y en el análisis escrito.</p>`;
+
+  const notices = data.avisos.length ? `<p class="tp-quality" role="note"><strong>Nota sobre los datos:</strong> ${data.avisos.map(escapeHtml).join(' ')}</p>` : '';
+  return `<article class="tp-card tp-analysis">
+    <h3>Análisis del territorio</h3>
+    <p class="tp-note">Cómo votó este territorio en cada elección${data.anio ? ` de ${escapeHtml(data.anio)}` : ''}. Cada partido se muestra por separado. Las coaliciones que existen en la base se conservan como opciones independientes.</p>
+    ${notices}
+    <h4>Voto por partido u opción registrada en cada elección</h4>
+    <div id="tp-party-chart" class="tp-chart" role="img" aria-label="Porcentaje de voto por partido u opción registrada en cada elección"></div>
+    ${delta}${sections}${history}
+    <section class="tp-ai" aria-labelledby="tp-ai-title">
+      <h4 id="tp-ai-title">Análisis escrito</h4>
+      <p class="tp-note">Hallazgos, voto diferenciado y qué vigilar, redactados con estas mismas cifras. El texto se revisa contra los datos, pero una persona debe leerlo antes de usarlo.</p>
+      <button id="tp-ai-btn" class="primary-button" type="button" data-tp="ai">Redactar análisis</button>
+      <div id="tp-ai-out" aria-live="polite"></div>
+    </section>
+  </article>`;
+}
+
+function drawPartyChart(data) {
+  const host = document.querySelector('#tp-party-chart');
+  if (!host) return;
+  if (!window.Plotly) { host.innerHTML = '<p class="weekly-note">No se pudo cargar la librería de gráficas. Verifica tu conexión a internet.</p>'; return; }
+  const elections = [...data.elecciones].reverse();
+  const traces = data.partidos.filter(item => elections.some(e => (e.pct[item.clave] || 0) > 0)).map(item => {
+    const values = elections.map(e => e.pct[item.clave] || 0);
+    return {
+      type: 'bar', orientation: 'h', name: item.etiqueta, x: values, y: elections.map(e => e.etiqueta),
+      marker: { color: item.color }, text: values.map(v => (v >= 8 ? `${Math.round(v)} %` : '')), textposition: 'inside',
+      insidetextanchor: 'middle', textfont: { color: '#ffffff', size: 12 },
+      hovertemplate: `${item.etiqueta}<br>%{y}: %{x:.1f} %<extra></extra>`,
+    };
+  });
+  Plotly.react(host, traces, {
+    barmode: 'stack', height: Math.max(230, 54 * elections.length + 110), margin: { l: 130, r: 16, t: 8, b: 70 },
+    paper_bgcolor: '#ffffff', plot_bgcolor: '#ffffff', font: { family: 'Schibsted Grotesk, system-ui, sans-serif', color: '#364155', size: 12 },
+    xaxis: { range: [0, 100], ticksuffix: ' %', gridcolor: '#eef1f5' }, yaxis: { automargin: true },
+    legend: { orientation: 'h', y: -0.22 }, hoverlabel: { bgcolor: '#1b1b26', font: { color: 'white' } },
+  }, { responsive: true, displaylogo: false, displayModeBar: false });
+}
+
+async function loadTerritoryAnalysis(profile) {
+  const host = document.querySelector('#tp-analysis-host');
+  if (!host) return;
+  const token = ++analysisToken;
+  lastAnalysisText = '';
+  host.innerHTML = '<article class="tp-card"><h3>Análisis del territorio</h3><p class="tp-note" role="status">Calculando la comparación entre elecciones…</p></article>';
+  try {
+    const query = new URLSearchParams({ nivel: profile.nivel, unidad: profile.unidad, ...(profile.anio ? { anio: profile.anio } : {}) });
+    const response = await fetch(`/api/territorio/comparativo?${query}`);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'No se pudo calcular el análisis.');
+    if (token !== analysisToken) return;
+    host.innerHTML = renderAnalysisCard(data);
+    drawPartyChart(data);
+    if (AUTO_ANALYSIS) requestAnalysis(false);
+  } catch (error) {
+    if (token === analysisToken) host.innerHTML = `<article class="tp-card"><h3>Análisis del territorio</h3><p class="tp-note">${escapeHtml(error.message)}</p></article>`;
+  }
+}
+
+function renderAnalysisText(data) {
+  const check = data.verificacion;
+  const verdict = check.no_respaldadas.length
+    ? `<p class="tp-quality" role="note"><strong>Revisa estas cifras:</strong> ${check.no_respaldadas.map(item => `«${escapeHtml(item)}»`).join(', ')}. No coinciden con los datos calculados para este territorio.</p>`
+    : check.respaldadas
+      ? `<p class="tp-note">Las ${check.respaldadas} cifras verificables del texto coinciden con los datos calculados.</p>`
+      : '<p class="tp-note">El texto no incluye cifras verificables.</p>';
+  const when = data.generado ? new Date(data.generado).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : '';
+  return `<div class="tp-ai-text">${renderMarkdown(data.texto)}</div>${verdict}
+    <p class="tp-note">${when ? `Redactado el ${escapeHtml(when)}${data.en_cache ? ' (guardado: las cifras no han cambiado)' : ''}.` : ''}</p>
+    <div class="tp-actions"><button type="button" class="secondary-button" data-tp="ai-copy">Copiar texto</button><button type="button" class="secondary-button" data-tp="ai-retry">Volver a redactar</button></div>`;
+}
+
+async function requestAnalysis(regenerate = false) {
+  const button = document.querySelector('#tp-ai-btn');
+  const out = document.querySelector('#tp-ai-out');
+  if (!currentProfile || !out) return;
+  const profile = currentProfile;
+  const token = analysisToken;
+  if (button) { button.disabled = true; button.textContent = 'Redactando…'; }
+  out.innerHTML = '<p class="tp-note" role="status">Redactando el análisis con las cifras de esta ficha. Tarda unos segundos.</p>';
+  try {
+    const response = await fetch('/api/territorio/analisis', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nivel: profile.nivel, unidad: String(profile.unidad), anio: profile.anio || null, regenerar: regenerate }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'No se pudo redactar el análisis.');
+    if (token !== analysisToken) return;
+    lastAnalysisText = data.texto;
+    out.innerHTML = renderAnalysisText(data);
+    if (button) button.hidden = true;
+  } catch (error) {
+    if (token !== analysisToken) return;
+    out.innerHTML = `<p class="tp-quality" role="alert">${escapeHtml(error.message)}</p>`;
+    if (button) { button.disabled = false; button.textContent = 'Redactar análisis'; }
+  }
+}
+
 // ------------------------------------------------------------------ eventos
 territoryResult.addEventListener('click', async (event) => {
   const election = event.target.closest('[data-election]');
@@ -216,6 +356,11 @@ territoryResult.addEventListener('click', async (event) => {
     input.focus();
   } else if (action === 'speech') {
     window.openSpeechWithTerritory?.({ nivel: currentProfile.nivel, unidad: currentProfile.unidad, anio: currentProfile.anio, eleccion: selectedElection });
+  } else if (action === 'ai' || action === 'ai-retry') {
+    requestAnalysis(action === 'ai-retry');
+  } else if (action === 'ai-copy') {
+    try { await navigator.clipboard.writeText(lastAnalysisText); document.dispatchEvent(new CustomEvent('app:notice', { detail: 'Análisis copiado.' })); }
+    catch { territoryStatus.textContent = 'No se pudo copiar. Selecciona el texto y cópialo manualmente.'; }
   } else if (action === 'link') {
     try { await navigator.clipboard.writeText(location.href); document.dispatchEvent(new CustomEvent('app:notice', { detail: 'Enlace copiado.' })); }
     catch { territoryStatus.textContent = 'No se pudo copiar. Copia la dirección desde la barra del navegador.'; }
@@ -258,4 +403,18 @@ window.addEventListener('hashchange', () => {
   const parts = decodeURIComponent(location.hash.slice(1)).split('/');
   const same = currentProfile && parts[1] === currentProfile.nivel && parts[2] === String(currentProfile.unidad);
   if (parts[0] === 'territorio' && !same) routeTerritory();
+});
+
+// Territorio activo: si cambia desde la barra (o desde otro módulo), el perfil lo sigue.
+function followActiveTerritory() {
+  const active = window.TerritorioActivo?.get();
+  if (!active) return;
+  const same = currentProfile && currentProfile.nivel === active.nivel && String(currentProfile.unidad) === String(active.unidad);
+  if (!same) showProfile(active.nivel, active.unidad, active.anio || null);
+}
+document.addEventListener('territorio:activo', (event) => {
+  if (event.detail && document.querySelector('.tab.active')?.dataset.tab === 'territorio') followActiveTerritory();
+});
+document.addEventListener('tab:changed', (event) => {
+  if (event.detail === 'territorio' && !/^#territorio\/./.test(location.hash)) followActiveTerritory();
 });
