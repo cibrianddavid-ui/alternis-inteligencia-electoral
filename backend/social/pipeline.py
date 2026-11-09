@@ -15,6 +15,7 @@ from .models import (
     ComparacionPosts,
     ErrorPost,
     ApifyScrapeError,
+    CuotaScrapingExcedidaError,
     SocialListeningError,
     _limpiar_url_facebook,
     _validar_urls_facebook,
@@ -36,11 +37,12 @@ from .db import (
     db_guardar_cache,
     db_obtener_cache_manual,
     db_guardar_cache_manual,
+    db_verificar_cuota_scrapeo,
     _deduplicar_comentarios,
     _fingerprint_dataset,
     _inferir_nombre_perfil,
 )
-from .scraping import _obtener_posts, _obtener_comentarios, _debe_refrescar_post
+from .scraping import _obtener_posts, _obtener_comentarios, _debe_refrescar_post, _debe_refrescar_perfil_posts
 from .analysis import (
     _clasificar_postura_todos,
     _validar_neutros_todos,
@@ -74,6 +76,7 @@ def analizar_perfil(
     solicitud: SolicitudSocial,
     groq_client: Any = None,
     groq_model: str = "llama3-70b-8192",
+    usuario: str = "anonimo",
 ) -> ResultadoSocial:
     """Ejecuta adquisición incremental + persistencia + análisis semántico.
 
@@ -128,17 +131,49 @@ def analizar_perfil(
         client_apify = ApifyClient(token_apify)
 
         # ------------------------------------------------------------------
-        # 1) Sincronizar posts. El cache NO puede impedir detectar posts nuevos.
+        # 1) Sincronizar posts: Solo consultar Apify si no están en BD o están vencidos
         # ------------------------------------------------------------------
-        try:
-            posts_meta, top_comentarios = _get_mod_fn("_obtener_posts", _obtener_posts)(
-                client_apify,
+        debe_refrescar_posts, posts_db = _get_mod_fn(
+            "_debe_refrescar_perfil_posts", _debe_refrescar_perfil_posts
+        )(
+            url_p,
+            solicitud.max_posts,
+            solicitud.forzar_refresco,
+        )
+
+        if debe_refrescar_posts:
+            permitido_posts, msg_cuota_p, _ = db_verificar_cuota_scrapeo(usuario)
+            if not permitido_posts:
+                if posts_db and not solicitud.forzar_refresco:
+                    log.warning(
+                        "Usuario %s excedió cuota mensual de scraping; usando %d posts existentes en BD.",
+                        usuario,
+                        len(posts_db),
+                    )
+                    debe_refrescar_posts = False
+                    posts_meta = posts_db
+                    top_comentarios = []
+                else:
+                    raise CuotaScrapingExcedidaError(msg_cuota_p)
+            else:
+                try:
+                    posts_meta, top_comentarios = _get_mod_fn("_obtener_posts", _obtener_posts)(
+                        client_apify,
+                        url_p,
+                        solicitud.max_posts,
+                        usuario=usuario,
+                    )
+                except ApifyScrapeError as exc:
+                    log.warning("No se pudieron actualizar posts de Apify; usando datos de BD: %s", exc)
+                    posts_meta = posts_db or db_obtener_posts_meta(url_p, solicitud.max_posts)
+                    top_comentarios = []
+        else:
+            log.info(
+                "Perfil %s: reutilizando %d posts de BD (recientemente sincronizados, costo Apify $0).",
                 url_p,
-                solicitud.max_posts,
+                len(posts_db),
             )
-        except ApifyScrapeError as exc:
-            log.warning("No se pudieron actualizar posts; intentando fallback BD: %s", exc)
-            posts_meta = db_obtener_posts_meta(url_p, solicitud.max_posts)
+            posts_meta = posts_db
             top_comentarios = []
 
         if not posts_meta:
@@ -170,20 +205,21 @@ def analizar_perfil(
         post_urls = [str(p["url"]) for p in posts_meta]
         post_texto_map = {str(p["url"]): str(p.get("texto") or "") for p in posts_meta}
 
-        contexto_cambiado = db_guardar_posts(url_p, posts_meta)
-        if contexto_cambiado:
-            log.info(
-                "Cambió el texto/contexto de %d posts; invalidando análisis asociado.",
-                len(contexto_cambiado),
-            )
-            db_invalidar_analisis_posts(contexto_cambiado)
+        if debe_refrescar_posts:
+            contexto_cambiado = db_guardar_posts(url_p, posts_meta)
+            if contexto_cambiado:
+                log.info(
+                    "Cambió el texto/contexto de %d posts; invalidando análisis asociado.",
+                    len(contexto_cambiado),
+                )
+                db_invalidar_analisis_posts(contexto_cambiado)
 
-        # Top comments embebidos también se guardan ANTES del LLM.
-        if top_comentarios:
-            db_guardar_comentarios(
-                url_p,
-                _deduplicar_comentarios(top_comentarios),
-            )
+            # Top comments embebidos también se guardan ANTES del LLM.
+            if top_comentarios:
+                db_guardar_comentarios(
+                    url_p,
+                    _deduplicar_comentarios(top_comentarios),
+                )
 
         # ------------------------------------------------------------------
         # 2) Refresh incremental de comentarios.
@@ -208,6 +244,18 @@ def analizar_perfil(
             ):
                 posts_a_refrescar.append(purl)
 
+        if posts_a_refrescar:
+            permitido_coms, msg_cuota_c, _ = db_verificar_cuota_scrapeo(usuario)
+            if not permitido_coms:
+                coms_en_bd = db_obtener_comentarios(url_p, post_urls=post_urls, limite_por_post=1)
+                if not coms_en_bd or solicitud.forzar_refresco:
+                    raise CuotaScrapingExcedidaError(msg_cuota_c)
+                log.warning(
+                    "Usuario %s excedió cuota mensual de scraping; se omiten llamadas de comentarios en Apify.",
+                    usuario,
+                )
+                posts_a_refrescar = []
+
         refrescos_exitosos = 0
         nuevos_comentarios = 0
 
@@ -217,6 +265,7 @@ def analizar_perfil(
                     client_apify,
                     purl,
                     solicitud.max_comentarios,
+                    usuario=usuario,
                 )
                 stats = db_guardar_comentarios(
                     url_p,
@@ -277,6 +326,10 @@ def analizar_perfil(
             )
             if cached:
                 log.info("Retornando caché válida para la huella %s.", fingerprint_pre)
+                ultimo_sinc = max((str(p.get("actualizado") or "") for p in posts_meta), default="") or basedatos.ahora()
+                cached.origen_datos = "cache_local"
+                cached.sincronizado_en = cached.sincronizado_en or ultimo_sinc
+                cached.comentarios_nuevos = nuevos_comentarios
                 return cached
 
         if groq_client is None:
@@ -345,6 +398,10 @@ def analizar_perfil(
                 fingerprint,
             )
             if cached:
+                ultimo_sinc = max((str(p.get("actualizado") or "") for p in posts_meta), default="") or basedatos.ahora()
+                cached.origen_datos = "cache_local"
+                cached.sincronizado_en = cached.sincronizado_en or ultimo_sinc
+                cached.comentarios_nuevos = nuevos_comentarios
                 return cached
 
         # ------------------------------------------------------------------
@@ -390,6 +447,7 @@ def analizar_perfil(
         neg_pct = float(sentimiento.get("negativo", 0.0))
         balance_neto = round(pos_pct - neg_pct, 1)
 
+        es_en_vivo = debe_refrescar_posts or len(posts_a_refrescar) > 0 or solicitud.forzar_refresco
         resultado = ResultadoSocial(
             url_perfil=url_p,
             posts_analizados=len(post_urls),
@@ -401,6 +459,9 @@ def analizar_perfil(
             metodo_resumen="modelo de lenguaje (semántico, postura dirigida)",
             comentarios_clasificados=_seleccionar_top_comentarios(clasificados),
             aprobacion_pct=balance_neto,
+            origen_datos="en_vivo" if es_en_vivo else "cache_local",
+            sincronizado_en=basedatos.ahora(),
+            comentarios_nuevos=nuevos_comentarios,
         )
 
         db_guardar_cache(
@@ -427,6 +488,7 @@ def _sincronizar_post_manual(
     post_url: str,
     max_comentarios: int,
     forzar_refresco: bool,
+    usuario: str = "anonimo",
 ) -> dict:
     """Sincroniza un post manual individual: obtiene metadatos y comentarios, persiste en BD.
 
@@ -446,41 +508,51 @@ def _sincronizar_post_manual(
     )
 
     if necesita_metadata and client_apify is not None:
-        try:
-            posts_scraped, top_comentarios = _get_mod_fn("_obtener_posts", _obtener_posts)(client_apify, post_url, 1)
-            if posts_scraped:
-                meta_item = posts_scraped[0]
-                canonical_url = _limpiar_url_facebook(meta_item.get("url") or post_url)
-                meta_item["url"] = canonical_url
-                meta_item["canonical_url"] = canonical_url
+        permitido_m, msg_cuota_m, _ = db_verificar_cuota_scrapeo(usuario)
+        if not permitido_m:
+            if post_meta is None or forzar_refresco:
+                raise CuotaScrapingExcedidaError(msg_cuota_m)
+            necesita_metadata = False
+        else:
+            try:
+                posts_scraped, top_comentarios = _get_mod_fn("_obtener_posts", _obtener_posts)(
+                    client_apify, post_url, 1, usuario=usuario
+                )
+                if posts_scraped:
+                    meta_item = posts_scraped[0]
+                    canonical_url = _limpiar_url_facebook(meta_item.get("url") or post_url)
+                    meta_item["url"] = canonical_url
+                    meta_item["canonical_url"] = canonical_url
 
-                # Guardar el post bajo la URL canónica
-                db_guardar_posts(meta_item.get("perfil_url") or "", [meta_item])
+                    # Guardar el post bajo la URL canónica
+                    db_guardar_posts(meta_item.get("perfil_url") or "", [meta_item])
 
-                # Si la URL solicitada o su versión limpia difiere de la canónica, guardar alias
-                variantes_alias = {post_url.rstrip("/"), post_url_limpia.rstrip("/")}
-                for var_alias in variantes_alias:
-                    if var_alias and var_alias != canonical_url.rstrip("/"):
-                        alias_item = dict(meta_item)
-                        alias_item["url"] = var_alias
-                        alias_item["canonical_url"] = canonical_url
-                        db_guardar_posts(meta_item.get("perfil_url") or "", [alias_item])
+                    # Si la URL solicitada o su versión limpia difiere de la canónica, guardar alias
+                    variantes_alias = {post_url.rstrip("/"), post_url_limpia.rstrip("/")}
+                    for var_alias in variantes_alias:
+                        if var_alias and var_alias != canonical_url.rstrip("/"):
+                            alias_item = dict(meta_item)
+                            alias_item["url"] = var_alias
+                            alias_item["canonical_url"] = canonical_url
+                            db_guardar_posts(meta_item.get("perfil_url") or "", [alias_item])
 
-                if top_comentarios:
-                    for tc in top_comentarios:
-                        tc["post_url"] = canonical_url
-                    db_guardar_comentarios(
-                        meta_item.get("perfil_url") or "",
-                        _deduplicar_comentarios(top_comentarios),
-                        post_url_defecto=canonical_url,
-                    )
-                post_meta = db_obtener_post_meta_por_url(canonical_url) or meta_item
-        except Exception as exc:
-            log.warning("No se pudieron obtener metadatos de Apify para %s: %s", post_url, exc)
-            if post_meta is None:
-                raise ApifyScrapeError(
-                    f"No se pudieron obtener metadatos de la publicación: {exc}"
-                ) from exc
+                    if top_comentarios:
+                        for tc in top_comentarios:
+                            tc["post_url"] = canonical_url
+                        db_guardar_comentarios(
+                            meta_item.get("perfil_url") or "",
+                            _deduplicar_comentarios(top_comentarios),
+                            post_url_defecto=canonical_url,
+                        )
+                    post_meta = db_obtener_post_meta_por_url(canonical_url) or meta_item
+            except CuotaScrapingExcedidaError:
+                raise
+            except Exception as exc:
+                log.warning("No se pudieron obtener metadatos de Apify para %s: %s", post_url, exc)
+                if post_meta is None:
+                    raise ApifyScrapeError(
+                        f"No se pudieron obtener metadatos de la publicación: {exc}"
+                    ) from exc
 
     if post_meta is None:
         post_meta = {
@@ -504,26 +576,41 @@ def _sincronizar_post_manual(
 
     if _debe_refrescar_post(post_meta, estado, max_comentarios, forzar_refresco, posicion=0):
         if client_apify is not None:
-            try:
-                # Usar post_url para el scraper de comentarios de Apify
-                comentarios_extra = _get_mod_fn("_obtener_comentarios", _obtener_comentarios)(client_apify, post_url, max_comentarios)
-                for c in comentarios_extra:
-                    c["post_url"] = canonical_url
-
-                db_guardar_comentarios(
-                    post_meta.get("perfil_url") or "",
-                    _deduplicar_comentarios(comentarios_extra),
-                    post_url_defecto=canonical_url,
-                )
-
-                db_marcar_post_refrescado(canonical_url, max_comentarios)
-                if post_url.rstrip("/") != canonical_url:
-                    db_marcar_post_refrescado(post_url, max_comentarios)
-            except Exception as exc:
-                log.warning("Error refrescando comentarios para %s: %s", post_url, exc)
+            permitido_c, msg_cuota_c, _ = db_verificar_cuota_scrapeo(usuario)
+            if not permitido_c:
                 comentarios_existentes = db_obtener_comentarios(post_urls=[canonical_url, post_url], limite_por_post=1)
-                if not comentarios_existentes:
-                    raise ApifyScrapeError(f"Fallo al obtener comentarios del post: {exc}") from exc
+                if not comentarios_existentes or forzar_refresco:
+                    raise CuotaScrapingExcedidaError(msg_cuota_c)
+                log.warning(
+                    "Usuario %s excedió cuota mensual de scraping; se omiten comentarios en vivo de %s.",
+                    usuario,
+                    post_url,
+                )
+            else:
+                try:
+                    # Usar post_url para el scraper de comentarios de Apify
+                    comentarios_extra = _get_mod_fn("_obtener_comentarios", _obtener_comentarios)(
+                        client_apify, post_url, max_comentarios, usuario=usuario
+                    )
+                    for c in comentarios_extra:
+                        c["post_url"] = canonical_url
+
+                    db_guardar_comentarios(
+                        post_meta.get("perfil_url") or "",
+                        _deduplicar_comentarios(comentarios_extra),
+                        post_url_defecto=canonical_url,
+                    )
+
+                    db_marcar_post_refrescado(canonical_url, max_comentarios)
+                    if post_url.rstrip("/") != canonical_url:
+                        db_marcar_post_refrescado(post_url, max_comentarios)
+                except CuotaScrapingExcedidaError:
+                    raise
+                except Exception as exc:
+                    log.warning("Error refrescando comentarios para %s: %s", post_url, exc)
+                    comentarios_existentes = db_obtener_comentarios(post_urls=[canonical_url, post_url], limite_por_post=1)
+                    if not comentarios_existentes:
+                        raise ApifyScrapeError(f"Fallo al obtener comentarios del post: {exc}") from exc
 
     # Unificar siempre en BD cualquier comentario previo asociado a alias
     alias_a_unificar = [
@@ -1124,6 +1211,7 @@ def analizar_posts_manual(
     solicitud: SolicitudPostsSocial,
     groq_client: Any = None,
     groq_model: str = "llama3-70b-8192",
+    usuario: str = "anonimo",
 ) -> ResultadoPostsManual:
     """Analiza publicaciones manuales específicas de Facebook con pipeline individual y comparativo."""
     asegurar_esquema_social()
@@ -1166,6 +1254,7 @@ def analizar_posts_manual(
                 post_url=post_url,
                 max_comentarios=solicitud.max_comentarios,
                 forzar_refresco=solicitud.forzar_refresco,
+                usuario=usuario,
             )
             res_ind = _analizar_post_individual(
                 post_meta=post_meta,

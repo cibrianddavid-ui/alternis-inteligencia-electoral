@@ -801,7 +801,7 @@ def borrar_campania(tabla: str, item_id: int, _: dict[str, Any] = Depends(auth.r
 @app.post("/api/social/analizar")
 async def social_analizar(
     solicitud: social_listening.SolicitudSocial,
-    _: dict[str, Any] = Depends(auth.requiere("coordinador")),
+    usuario_sesion: dict[str, Any] = Depends(auth.requiere("coordinador")),
 ) -> social_listening.ResultadoSocial:
     """Ejecuta el pipeline de Social Listening para un perfil público de Facebook.
 
@@ -818,6 +818,7 @@ async def social_analizar(
         if api_key:
             client = Groq(api_key=api_key)
     modelo = estado.modelo() if hasattr(estado, "modelo") else (os.getenv("GROQ_MODEL") or "openai/gpt-oss-120b")
+    username = str(usuario_sesion.get("usuario") or "anonimo")
 
     try:
         resultado = await loop.run_in_executor(
@@ -826,9 +827,15 @@ async def social_analizar(
                 solicitud,
                 groq_client=client,
                 groq_model=modelo,
+                usuario=username,
             ),
         )
         return resultado
+    except social_listening.CuotaScrapingExcedidaError as exc_cuota:
+        raise HTTPException(
+            status_code=429,
+            detail=str(exc_cuota),
+        )
     except Exception as exc_llm:
         log.warning(
             "Fallo en el pipeline LLM de Social Listening (%s). Activando módulo de respaldo independiente (social_fallback)...",
@@ -845,7 +852,7 @@ async def social_analizar(
 @app.post("/api/social/posts")
 async def social_analizar_posts(
     solicitud: social_listening.SolicitudPostsSocial,
-    _: dict[str, Any] = Depends(auth.requiere("coordinador")),
+    usuario_sesion: dict[str, Any] = Depends(auth.requiere("coordinador")),
 ) -> social_listening.ResultadoPostsManual:
     """Ejecuta el pipeline de Social Listening para una lista manual de publicaciones de Facebook.
 
@@ -861,15 +868,23 @@ async def social_analizar_posts(
         if api_key:
             client = Groq(api_key=api_key)
     modelo = estado.modelo() if hasattr(estado, "modelo") else (os.getenv("GROQ_MODEL") or "openai/gpt-oss-120b")
+    username = str(usuario_sesion.get("usuario") or "anonimo")
 
-    return await loop.run_in_executor(
-        None,
-        lambda: social_listening.analizar_posts_manual(
-            solicitud,
-            groq_client=client,
-            groq_model=modelo,
-        ),
-    )
+    try:
+        return await loop.run_in_executor(
+            None,
+            lambda: social_listening.analizar_posts_manual(
+                solicitud,
+                groq_client=client,
+                groq_model=modelo,
+                usuario=username,
+            ),
+        )
+    except social_listening.CuotaScrapingExcedidaError as exc_cuota:
+        raise HTTPException(
+            status_code=429,
+            detail=str(exc_cuota),
+        )
 
 
 class ExportarSocialPDF(BaseModel):
@@ -962,6 +977,27 @@ async def social_historico(
     except Exception as exc:
         log.error("Error en análisis histórico de perfil (%s): %s", target_url, exc, exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error en análisis histórico: {exc}") from exc
+
+
+# ---------------------------------------------------------------------------
+# Control y Auditoría de Consumo de Apify por Usuario
+# ---------------------------------------------------------------------------
+
+@app.get("/api/social/consumo")
+def social_consumo(
+    periodo: str = Query("mes", description="Periodo de auditoría: 'hoy', 'semana', 'mes', 'todo'"),
+    vista: str = Query("mi", description="'mi' (consumo propio) o 'global' (solo admin)"),
+    usuario_sesion: dict[str, Any] = Depends(auth.requiere("coordinador")),
+) -> dict[str, Any]:
+    """Devuelve el contador de posts y comentarios scrapeados de Apify por usuario."""
+    username = str(usuario_sesion.get("usuario") or "anonimo")
+    es_admin = usuario_sesion.get("rol") == "admin"
+    ver_global = es_admin and (vista == "global")
+    return social_listening.obtener_resumen_consumo(
+        usuario=username,
+        periodo=periodo,
+        ver_global=ver_global,
+    )
 
 
 

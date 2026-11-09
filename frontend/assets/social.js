@@ -85,7 +85,7 @@
     [step1El, step2El, step3El, step4El].forEach((el, i) => {
       if (!el) return;
       el.style.opacity = i < n ? '1' : '0.4';
-      el.textContent = el.textContent.replace('⏳', i < n ? '✅' : '⏳');
+      el.style.fontWeight = i < n ? '700' : '400';
     });
   }
 
@@ -104,12 +104,17 @@
 
   function resetSteps() {
     const steps = [step1El, step2El, step3El, step4El];
-    const labels = ['⏳ Extrayendo posts…', '⏳ Obteniendo comentarios…',
-      '⏳ Analizando sentimiento…', '⏳ Generando resumen…'];
+    const labels = [
+      '1. Extrayendo publicaciones…',
+      '2. Obteniendo comentarios…',
+      '3. Analizando postura y temas…',
+      '4. Generando resumen ejecutivo…',
+    ];
     steps.forEach((el, i) => {
       if (el) {
         el.textContent = labels[i];
         el.style.opacity = i === 0 ? '1' : '0.4';
+        el.style.fontWeight = i === 0 ? '700' : '400';
       }
     });
   }
@@ -123,7 +128,7 @@
     const textoOriginal = btn ? btn.innerHTML : '';
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = '<span>⏳</span> Generando PDF…';
+      btn.innerHTML = 'Generando PDF…';
     }
 
     try {
@@ -203,9 +208,9 @@
       </div>`;
 
     const colores = {
-      positivo: { bg: '#dcfce7', bar: '#16a34a', label: 'Positivo 😊' },
-      neutro: { bg: '#f3f4f6', bar: '#6b7280', label: 'Neutro 😐' },
-      negativo: { bg: '#fee2e2', bar: '#dc2626', label: 'Negativo 😟' },
+      positivo: { bg: '#dcfce7', bar: '#16a34a', label: 'Positivo' },
+      neutro: { bg: '#f3f4f6', bar: '#6b7280', label: 'Neutro' },
+      negativo: { bg: '#fee2e2', bar: '#dc2626', label: 'Negativo' },
     };
 
     const order = ['positivo', 'neutro', 'negativo'];
@@ -249,9 +254,9 @@
   function openNgramModal(ng) {
     if (!ngramModalEl || !ng) return;
     const badgeTono = {
-      positivo: { bg: '#dcfce7', color: '#15803d', label: 'Positivo 😊' },
-      negativo: { bg: '#fee2e2', color: '#b91c1c', label: 'Crítica / Reclamo 😟' },
-      neutro: { bg: '#f3f4f6', color: '#4b5563', label: 'Neutro 😐' },
+      positivo: { bg: '#dcfce7', color: '#15803d', label: 'Positivo' },
+      negativo: { bg: '#fee2e2', color: '#b91c1c', label: 'Crítica / Reclamo' },
+      neutro: { bg: '#f3f4f6', color: '#4b5563', label: 'Neutro' },
     };
     const tInfo = badgeTono[ng.tono] || badgeTono.neutro;
 
@@ -270,10 +275,10 @@
 
     if (ngramModalStats) {
       ngramModalStats.innerHTML = `
-        <span style="font-size:0.8rem;background:#f1f5f9;color:#334155;padding:4px 10px;border-radius:12px;font-weight:600">📊 ${ng.frecuencia || 0} mención${(ng.frecuencia || 0) > 1 ? 'es' : ''} asociadas</span>
-        ${nCrit > 0 ? `<span style="font-size:0.8rem;background:#fee2e2;color:#b91c1c;padding:4px 10px;border-radius:12px;font-weight:600">🔴 ${nCrit} crítica${nCrit > 1 ? 's' : ''}</span>` : ''}
-        ${nApo > 0 ? `<span style="font-size:0.8rem;background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:12px;font-weight:600">🟢 ${nApo} apoyo${nApo > 1 ? 's' : ''}</span>` : ''}
-        ${nNeu > 0 ? `<span style="font-size:0.8rem;background:#f3f4f6;color:#4b5563;padding:4px 10px;border-radius:12px;font-weight:600">⚪ ${nNeu} neutro${nNeu > 1 ? 's' : ''}</span>` : ''}
+        <span style="font-size:0.8rem;background:#f1f5f9;color:#334155;padding:4px 10px;border-radius:12px;font-weight:600">${ng.frecuencia || 0} mención${(ng.frecuencia || 0) > 1 ? 'es' : ''} asociadas</span>
+        ${nCrit > 0 ? `<span style="font-size:0.8rem;background:#fee2e2;color:#b91c1c;padding:4px 10px;border-radius:12px;font-weight:600">${nCrit} crítica${nCrit > 1 ? 's' : ''}</span>` : ''}
+        ${nApo > 0 ? `<span style="font-size:0.8rem;background:#dcfce7;color:#15803d;padding:4px 10px;border-radius:12px;font-weight:600">${nApo} apoyo${nApo > 1 ? 's' : ''}</span>` : ''}
+        ${nNeu > 0 ? `<span style="font-size:0.8rem;background:#f3f4f6;color:#4b5563;padding:4px 10px;border-radius:12px;font-weight:600">${nNeu} neutro${nNeu > 1 ? 's' : ''}</span>` : ''}
       `;
     }
 
@@ -304,7 +309,7 @@
                     ${cT.label}
                   </span>
                 </div>
-                ${c.likes > 0 ? `<span style="font-size:0.72rem;font-weight:700;background:#fef3c7;color:#b45309;padding:2px 7px;border-radius:10px">👍 ${c.likes}</span>` : ''}
+                ${c.likes > 0 ? `<span style="font-size:0.72rem;font-weight:700;background:#fef3c7;color:#b45309;padding:2px 7px;border-radius:10px">${c.likes} likes</span>` : ''}
               </div>
               <p style="margin:0 0 8px 0;font-size:0.88rem;line-height:1.45;color:#1e293b;background:#f8fafc;padding:8px 10px;border-radius:6px;word-break:break-word">
                 «${escapeHtml(c.texto || '')}»
@@ -332,9 +337,9 @@
     const maxFreq = Math.max(...ngramas.map(ng => ng.frecuencia || 1), 1);
 
     const badgeTono = {
-      positivo: { bg: '#dcfce7', color: '#15803d', label: 'Positivo 😊' },
-      negativo: { bg: '#fee2e2', color: '#b91c1c', label: 'Crítica / Negativo 😟' },
-      neutro: { bg: '#f3f4f6', color: '#4b5563', label: 'Neutro 😐' },
+      positivo: { bg: '#dcfce7', color: '#15803d', label: 'Positivo' },
+      negativo: { bg: '#fee2e2', color: '#b91c1c', label: 'Crítica / Negativo' },
+      neutro: { bg: '#f3f4f6', color: '#4b5563', label: 'Neutro' },
     };
 
     ngramsEl.innerHTML = ngramas.map((ng, i) => {
@@ -347,9 +352,9 @@
 
       const d = ng.desglose || {};
       const breakdownPills = [];
-      if ((d.negativo || 0) > 0) breakdownPills.push(`<span style="color:#b91c1c;font-weight:600">🔴 ${d.negativo} crítica${d.negativo > 1 ? 's' : ''}</span>`);
-      if ((d.positivo || 0) > 0) breakdownPills.push(`<span style="color:#15803d;font-weight:600">🟢 ${d.positivo} apoyo${d.positivo > 1 ? 's' : ''}</span>`);
-      if ((d.neutro || 0) > 0) breakdownPills.push(`<span style="color:#64748b;font-weight:600">⚪ ${d.neutro} neutro${d.neutro > 1 ? 's' : ''}</span>`);
+      if ((d.negativo || 0) > 0) breakdownPills.push(`<span style="color:#b91c1c;font-weight:600">${d.negativo} crítica${d.negativo > 1 ? 's' : ''}</span>`);
+      if ((d.positivo || 0) > 0) breakdownPills.push(`<span style="color:#15803d;font-weight:600">${d.positivo} apoyo${d.positivo > 1 ? 's' : ''}</span>`);
+      if ((d.neutro || 0) > 0) breakdownPills.push(`<span style="color:#64748b;font-weight:600">${d.neutro} neutro${d.neutro > 1 ? 's' : ''}</span>`);
       const breakdownHtml = breakdownPills.length > 0
         ? `<div style="display:flex;gap:8px;font-size:0.75rem;margin-top:6px;flex-wrap:wrap">${breakdownPills.join(' · ')}</div>`
         : '';
@@ -366,7 +371,7 @@
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <span style="font-size:0.82rem;font-weight:600;color:#6b7280">${ng.frecuencia} mención${ng.frecuencia > 1 ? 'es' : ''}</span>
-              <button type="button" class="btn-ver-ngram-comments" style="font-size:0.75rem;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;padding:2px 8px;border-radius:6px;font-weight:600;cursor:pointer">Ver comentarios (${numComentarios}) 🔍</button>
+              <button type="button" class="btn-ver-ngram-comments" style="font-size:0.75rem;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;padding:2px 8px;border-radius:6px;font-weight:600;cursor:pointer">Ver comentarios (${numComentarios})</button>
             </div>
           </div>
           <div style="background:#f1f5f9;border-radius:4px;overflow:hidden;height:6px;margin:6px 0">
@@ -418,9 +423,9 @@
       else count = conteoPorTono[f] || 0;
 
       if (f === 'todos') btn.textContent = `Todos (${count})`;
-      else if (f === 'negativo') btn.textContent = `🔴 Críticas (${count})`;
-      else if (f === 'positivo') btn.textContent = `🟢 Apoyos (${count})`;
-      else if (f === 'neutro') btn.textContent = `⚪ Dudas / Neutros (${count})`;
+      else if (f === 'negativo') btn.textContent = `Críticas (${count})`;
+      else if (f === 'positivo') btn.textContent = `Apoyos (${count})`;
+      else if (f === 'neutro') btn.textContent = `Consultas / Neutros (${count})`;
     });
   }
 
@@ -439,15 +444,15 @@
     }
 
     const badgeTono = {
-      positivo: { bg: '#dcfce7', color: '#15803d', label: 'Apoyo / Positivo 😊', border: '#86efac' },
-      negativo: { bg: '#fee2e2', color: '#b91c1c', label: 'Crítica / Reclamo 😟', border: '#fca5a5' },
-      neutro: { bg: '#f1f5f9', color: '#475569', label: 'Consulta / Neutro 😐', border: '#cbd5e1' },
+      positivo: { bg: '#dcfce7', color: '#15803d', label: 'Apoyo / Positivo', border: '#86efac' },
+      negativo: { bg: '#fee2e2', color: '#b91c1c', label: 'Crítica / Reclamo', border: '#fca5a5' },
+      neutro: { bg: '#f1f5f9', color: '#475569', label: 'Consulta / Neutro', border: '#cbd5e1' },
     };
 
     const accionSugerida = {
-      negativo: '🚨 <strong>Acción recomendada:</strong> Contactar para aclarar con propuestas o datos antes de que escale.',
-      positivo: '⭐ <strong>Acción recomendada:</strong> Agradecer respaldo y canalizar a red de promotores / brigadas.',
-      neutro: '💬 <strong>Acción recomendada:</strong> Resolver duda o brindar canal de atención ciudadana.',
+      negativo: '<strong>Recomendación:</strong> Contactar para aclarar con propuestas o datos antes de que escale.',
+      positivo: '<strong>Recomendación:</strong> Agradecer respaldo y canalizar a red de promotores o brigadas.',
+      neutro: '<strong>Recomendación:</strong> Resolver duda o brindar canal de atención ciudadana.',
     };
 
     commentsGridEl.innerHTML = filtrados.map(c => {
@@ -473,7 +478,7 @@
                   </span>
                 </div>
               </div>
-              ${c.likes > 0 ? `<span style="font-size:0.75rem;font-weight:700;background:#fef3c7;color:#b45309;padding:3px 8px;border-radius:12px;white-space:nowrap">👍 ${c.likes}</span>` : ''}
+              ${c.likes > 0 ? `<span style="font-size:0.75rem;font-weight:700;background:#fef3c7;color:#b45309;padding:3px 8px;border-radius:12px;white-space:nowrap">${c.likes} likes</span>` : ''}
             </div>
 
             <p style="font-size:0.9rem;line-height:1.5;color:#1e293b;margin:10px 0;word-break:break-word;background:#f8fafc;padding:10px;border-radius:8px">
@@ -528,21 +533,98 @@
 
   let currentProfileData = null;
 
+  function formatFechaFrescura(isoString) {
+    if (!isoString) return 'Reciente';
+    try {
+      const fecha = new Date(isoString);
+      if (isNaN(fecha.getTime())) return isoString;
+      const ahora = new Date();
+      const diffMs = ahora.getTime() - fecha.getTime();
+      const diffMins = Math.max(0, Math.floor(diffMs / 60000));
+
+      let relativo = '';
+      if (diffMins < 1) {
+        relativo = 'hace unos momentos';
+      } else if (diffMins === 1) {
+        relativo = 'hace 1 minuto';
+      } else if (diffMins < 60) {
+        relativo = `hace ${diffMins} min`;
+      } else {
+        const diffHoras = Math.floor(diffMins / 60);
+        relativo = diffHoras === 1 ? 'hace 1 hora' : `hace ${diffHoras} horas`;
+      }
+
+      const dia = fecha.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+      const hora = fecha.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+      return `${dia}, ${hora} (${relativo})`;
+    } catch (e) {
+      return isoString;
+    }
+  }
+
+  function renderFreshnessBanner(data) {
+    const banner = document.getElementById('social-freshness-banner');
+    if (!banner) return;
+
+    const esEnVivo = (data.origen_datos || 'en_vivo') === 'en_vivo';
+    const statusBg = esEnVivo ? '#ecfdf5' : '#eff6ff';
+    const statusBorder = esEnVivo ? '#a7f3d0' : '#bfdbfe';
+    const statusColor = esEnVivo ? '#065f46' : '#1e40af';
+    const statusText = esEnVivo ? 'SINCRONIZADO EN VIVO' : 'DATOS LOCALES EN BD';
+
+    const fechaTexto = formatFechaFrescura(data.sincronizado_en);
+    const commsNuevos = Number(data.comentarios_nuevos) || 0;
+    const deltaBadgeHtml = commsNuevos > 0
+      ? `<span style="display:inline-flex;align-items:center;padding:3px 9px;border-radius:12px;background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;font-size:0.75rem;font-weight:600;margin-left:6px;">+${commsNuevos} comentarios nuevos</span>`
+      : '';
+
+    banner.innerHTML = `
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+          <span style="display:inline-block;padding:4px 10px;border-radius:6px;background:${statusBg};color:${statusColor};border:1px solid ${statusBorder};font-size:0.75rem;font-weight:700;letter-spacing:0.5px;">${statusText}</span>
+          <span style="font-size:0.85rem;color:#475569;"><strong>Sincronizado:</strong> ${fechaTexto}</span>
+          ${deltaBadgeHtml}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button type="button" id="btn-force-refresh-quick" class="secondary-button" style="padding:6px 14px;font-size:0.82rem;font-weight:500;" title="Forzar sincronización inmediata con Facebook vía Apify">
+            Actualizar con Facebook ↻
+          </button>
+          <button type="button" id="social-profile-export-pdf" class="secondary-button" style="padding:6px 14px;font-size:0.82rem;font-weight:500;">
+            Descargar Reporte de Perfil (PDF)
+          </button>
+        </div>
+      </div>
+    `;
+
+    const quickRefreshBtn = document.getElementById('btn-force-refresh-quick');
+    if (quickRefreshBtn) {
+      quickRefreshBtn.addEventListener('click', () => {
+        if (form) {
+          form._forceRefreshOnce = true;
+          if (forceRefreshInput) forceRefreshInput.checked = true;
+          form.requestSubmit();
+        }
+      });
+    }
+
+    const exportPdfBtn = document.getElementById('social-profile-export-pdf');
+    if (exportPdfBtn) {
+      exportPdfBtn.addEventListener('click', () => {
+        descargarPdfSocial('perfil', currentProfileData, exportPdfBtn);
+      });
+    }
+  }
+
   function renderResults(data) {
     currentProfileData = data;
+    renderFreshnessBanner(data);
     renderSentiment(data.sentimiento, data.distribucion, data.total_comentarios, data.posts_analizados, data.aprobacion_pct);
     renderNgrams(data.ngramas);
     renderClassifiedComments(data.comentarios_clasificados || []);
     summaryEl.textContent = data.resumen || '— Sin resumen disponible —';
-    methodBadge.textContent = data.metodo_resumen && data.metodo_resumen.includes('modelo') ? '🤖 IA Semántica' : '📝 Extractivo';
+    methodBadge.textContent = data.metodo_resumen && data.metodo_resumen.includes('modelo') ? 'Análisis semántico' : 'Síntesis estructurada';
     resultsEl.hidden = false;
-  }
-
-  const profileExportPdfBtn = document.getElementById('social-profile-export-pdf');
-  if (profileExportPdfBtn) {
-    profileExportPdfBtn.addEventListener('click', () => {
-      descargarPdfSocial('perfil', currentProfileData, profileExportPdfBtn);
-    });
+    cargarContadorApify();
   }
 
   // ── Animación de progreso simulada ───────────────────────────────────────
@@ -589,6 +671,11 @@
         forzar_refresco: forceRefreshInput ? forceRefreshInput.checked : false,
       };
 
+      if (form._forceRefreshOnce) {
+        form._forceRefreshOnce = false;
+        if (forceRefreshInput) forceRefreshInput.checked = false;
+      }
+
       const res = await fetch('/api/social/analizar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -609,7 +696,7 @@
       const data = await res.json();
 
       if (data.error) {
-        showError(`⚠️ ${data.error}`);
+        showError(data.error);
         return;
       }
 
@@ -663,22 +750,23 @@
     [postsStep1El, postsStep2El, postsStep3El, postsStep4El].forEach((el, i) => {
       if (!el) return;
       el.style.opacity = i < n ? '1' : '0.4';
-      el.textContent = el.textContent.replace('⏳', i < n ? '✅' : '⏳');
+      el.style.fontWeight = i < n ? '700' : '400';
     });
   }
 
   function resetPostsSteps() {
     const steps = [postsStep1El, postsStep2El, postsStep3El, postsStep4El];
     const labels = [
-      '⏳ Sincronizando publicaciones…',
-      '⏳ Obteniendo comentarios…',
-      '⏳ Analizando postura y temas…',
-      '⏳ Generando comparativa…',
+      '1. Sincronizando publicaciones…',
+      '2. Obteniendo comentarios…',
+      '3. Analizando postura y temas…',
+      '4. Generando comparativa…',
     ];
     steps.forEach((el, i) => {
       if (el) {
         el.textContent = labels[i];
         el.style.opacity = i === 0 ? '1' : '0.4';
+        el.style.fontWeight = i === 0 ? '700' : '400';
       }
     });
   }
@@ -730,6 +818,7 @@
     currentManualPostsData = data.posts || [];
     postsResultsEl.innerHTML = '';
     postsResultsEl.hidden = false;
+    cargarContadorApify();
 
     let html = '';
 
@@ -737,7 +826,7 @@
     if (data.posts_con_error && data.posts_con_error.length > 0) {
       html += `
         <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:14px 18px;margin-bottom:20px;color:#92400e;font-size:0.9rem">
-          <strong>⚠️ Atención:</strong> No fue posible descargar los datos de ${data.posts_con_error.length} publicación(es):
+          <strong>Aviso:</strong> No fue posible descargar los datos de ${data.posts_con_error.length} publicación(es):
           <ul style="margin:8px 0 0 20px;padding:0">
             ${data.posts_con_error.map(err => `
               <li style="margin-bottom:4px">
@@ -767,10 +856,10 @@
       html += `
         <div style="display:flex;justify-content:flex-end;gap:10px;margin-bottom:16px;flex-wrap:wrap">
           <button type="button" id="social-posts-export-comp-pdf" class="primary-button" style="display:inline-flex;align-items:center;gap:6px;font-size:0.85rem;padding:6px 14px">
-            <span>📥</span> Descargar comparativa en PDF
+            Descargar comparativa (PDF)
           </button>
           <button type="button" id="social-posts-export-detail-pdf" class="secondary-button" style="display:inline-flex;align-items:center;gap:6px;font-size:0.85rem;padding:6px 14px">
-            <span>📄</span> Descargar detalle de posts en PDF
+            Descargar detalle de publicaciones (PDF)
           </button>
         </div>
       `;
@@ -778,7 +867,7 @@
       html += `
         <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
           <button type="button" id="social-posts-export-detail-pdf" class="secondary-button" style="display:inline-flex;align-items:center;gap:6px;font-size:0.85rem;padding:6px 14px">
-            <span>📥</span> Descargar análisis de post en PDF
+            Descargar análisis de publicación (PDF)
           </button>
         </div>
       `;
@@ -852,7 +941,7 @@
             <!-- Temas compartidos -->
             <div>
               <h3 style="font-size:0.95rem;font-weight:700;color:#1e293b;margin-bottom:10px">
-                🔹 Temas compartidos (${(comp.temas_compartidos || []).length})
+                Temas compartidos (${(comp.temas_compartidos || []).length})
               </h3>
               ${(comp.temas_compartidos || []).length === 0 ? `
                 <p style="font-size:0.85rem;color:#94a3b8">No se identificaron temas coincidentes entre las publicaciones analizadas.</p>
@@ -884,7 +973,7 @@
             <!-- Temas distintivos -->
             <div>
               <h3 style="font-size:0.95rem;font-weight:700;color:#1e293b;margin-bottom:10px">
-                🔸 Temas distintivos por publicación (${(comp.temas_distintivos || []).length})
+                Temas distintivos por publicación (${(comp.temas_distintivos || []).length})
               </h3>
               ${(comp.temas_distintivos || []).length === 0 ? `
                 <p style="font-size:0.85rem;color:#94a3b8">Todos los temas identificados fueron compartidos entre publicaciones.</p>
@@ -961,7 +1050,7 @@
               <div style="font-size:0.8rem;color:#64748b">
                 ${post.fecha_post ? `Publicado el ${escapeHtml(post.fecha_post)} · ` : ''}
                 ${post.total_comentarios} comentarios (${post.cobertura_pct}% analizados) ·
-                👍 ${post.post_likes} likes
+                ${post.post_likes} likes
               </div>
             </div>
             <a href="${escapeHtml(post.post_url)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:4px;color:#1d4ed8;font-size:0.82rem;font-weight:600;text-decoration:none">
@@ -990,15 +1079,15 @@
           <div style="margin-bottom:16px">
             <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:10px;margin-bottom:8px">
               <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px">
-                <div style="font-size:0.75rem;font-weight:600;color:#16a34a">🟢 Positivo</div>
+                <div style="font-size:0.75rem;font-weight:600;color:#16a34a">Positivo</div>
                 <div style="font-size:1.1rem;font-weight:800;color:#15803d">${(post.porcentajes && post.porcentajes.positivo) || 0}% <span style="font-size:0.75rem;font-weight:500;color:#64748b">(${(post.distribucion && post.distribucion.positivo) || 0})</span></div>
               </div>
               <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px">
-                <div style="font-size:0.75rem;font-weight:600;color:#64748b">⚪ Neutro</div>
+                <div style="font-size:0.75rem;font-weight:600;color:#64748b">Neutro</div>
                 <div style="font-size:1.1rem;font-weight:800;color:#334155">${(post.porcentajes && post.porcentajes.neutro) || 0}% <span style="font-size:0.75rem;font-weight:500;color:#64748b">(${(post.distribucion && post.distribucion.neutro) || 0})</span></div>
               </div>
               <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 12px">
-                <div style="font-size:0.75rem;font-weight:600;color:#dc2626">🔴 Negativo</div>
+                <div style="font-size:0.75rem;font-weight:600;color:#dc2626">Negativo</div>
                 <div style="font-size:1.1rem;font-weight:800;color:#b91c1c">${(post.porcentajes && post.porcentajes.negativo) || 0}% <span style="font-size:0.75rem;font-weight:500;color:#64748b">(${(post.distribucion && post.distribucion.negativo) || 0})</span></div>
               </div>
             </div>
@@ -1028,7 +1117,7 @@
               <h4 style="font-size:0.85rem;font-weight:700;color:#475569;text-transform:uppercase;margin:0 0 8px 0">Comentarios representativos</h4>
               <div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:10px">
                 ${post.comentarios_representativos.map(c => {
-        const tonoBadge = c.tono === 'positivo' ? { bg: '#dcfce7', color: '#15803d', label: 'Positivo 😊' } : (c.tono === 'negativo' ? { bg: '#fee2e2', color: '#b91c1c', label: 'Crítica 😟' } : { bg: '#f3f4f6', color: '#4b5563', label: 'Neutro 😐' });
+        const tonoBadge = c.tono === 'positivo' ? { bg: '#dcfce7', color: '#15803d', label: 'Positivo' } : (c.tono === 'negativo' ? { bg: '#fee2e2', color: '#b91c1c', label: 'Crítica' } : { bg: '#f3f4f6', color: '#4b5563', label: 'Neutro' });
         const urlFB = c.comentario_url || c.autor_url;
         return `
                     <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:10px;font-size:0.85rem">
@@ -1265,7 +1354,7 @@
         const fechasRango = p.fecha_min && p.fecha_max ? ` · ${p.fecha_min} al ${p.fecha_max}` : '';
         return `
           <button type="button" class="history-profile-chip" data-url="${escapeHtml(p.url_perfil)}" style="display:inline-flex;align-items:center;gap:6px;background:#ffffff;border:1px solid #cbd5e1;border-radius:18px;padding:4px 12px;font-size:0.78rem;cursor:pointer;transition:all 0.15s">
-            <span style="font-weight:700;color:#0f172a">👤 ${escapeHtml(p.perfil_nombre || 'Perfil')}</span>
+            <span style="font-weight:700;color:#0f172a">${escapeHtml(p.perfil_nombre || 'Perfil')}</span>
             <span style="color:#64748b">(${p.total_posts} posts · ${p.total_comentarios} com.${fechasRango})</span>
           </button>
         `;
@@ -1362,7 +1451,7 @@
     let html = `
       <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
         <button type="button" id="social-historico-export-pdf" class="secondary-button" style="display:inline-flex;align-items:center;gap:6px;font-size:0.85rem;padding:6px 14px">
-          <span>📥</span> Descargar reporte histórico en PDF
+          Descargar reporte histórico en PDF
         </button>
       </div>
     `;
@@ -1422,10 +1511,10 @@
                 <th style="padding:10px 14px">Rango de fechas</th>
                 <th style="padding:10px 14px;text-align:center">Posts</th>
                 <th style="padding:10px 14px;text-align:center">Comentarios</th>
-                <th style="padding:10px 14px;text-align:center">🟢 Positivo</th>
-                <th style="padding:10px 14px;text-align:center">⚪ Neutro</th>
-                <th style="padding:10px 14px;text-align:center">🔴 Negativo</th>
-                <th style="padding:10px 14px;text-align:center">⚖️ Balance neto</th>
+                <th style="padding:10px 14px;text-align:center">Positivo</th>
+                <th style="padding:10px 14px;text-align:center">Neutro</th>
+                <th style="padding:10px 14px;text-align:center">Negativo</th>
+                <th style="padding:10px 14px;text-align:center">Balance neto</th>
                 <th style="padding:10px 14px;text-align:center">Variación vs anterior</th>
               </tr>
             </thead>
@@ -1514,44 +1603,44 @@
 
     const hoverTemplatePos =
       '<b>%{customdata.periodo}</b><br>' +
-      '🟢 <b>Positivo: %{customdata.pos:.1f}%</b><br>' +
-      '🔴 Negativo: %{customdata.neg:.1f}%<br>' +
-      '⚪ Neutro: %{customdata.neu:.1f}%<br>' +
-      '📄 Publicaciones: %{customdata.posts}<br>' +
-      '💬 Comentarios: %{customdata.comms}<br>' +
-      '⚖️ Balance de postura: %{customdata.bal:+.1f}%<extra></extra>';
+      '<b>Positivo: %{customdata.pos:.1f}%</b><br>' +
+      'Negativo: %{customdata.neg:.1f}%<br>' +
+      'Neutro: %{customdata.neu:.1f}%<br>' +
+      'Publicaciones: %{customdata.posts}<br>' +
+      'Comentarios: %{customdata.comms}<br>' +
+      'Balance de postura: %{customdata.bal:+.1f}%<extra></extra>';
 
     const hoverTemplateNeg =
       '<b>%{customdata.periodo}</b><br>' +
-      '🟢 Positivo: %{customdata.pos:.1f}%<br>' +
-      '🔴 <b>Negativo: %{customdata.neg:.1f}%</b><br>' +
-      '⚪ Neutro: %{customdata.neu:.1f}%<br>' +
-      '📄 Publicaciones: %{customdata.posts}<br>' +
-      '💬 Comentarios: %{customdata.comms}<br>' +
-      '⚖️ Balance de postura: %{customdata.bal:+.1f}%<extra></extra>';
+      'Positivo: %{customdata.pos:.1f}%<br>' +
+      '<b>Negativo: %{customdata.neg:.1f}%</b><br>' +
+      'Neutro: %{customdata.neu:.1f}%<br>' +
+      'Publicaciones: %{customdata.posts}<br>' +
+      'Comentarios: %{customdata.comms}<br>' +
+      'Balance de postura: %{customdata.bal:+.1f}%<extra></extra>';
 
     const hoverTemplateNeu =
       '<b>%{customdata.periodo}</b><br>' +
-      '🟢 Positivo: %{customdata.pos:.1f}%<br>' +
-      '🔴 Negativo: %{customdata.neg:.1f}%<br>' +
-      '⚪ <b>Neutro: %{customdata.neu:.1f}%</b><br>' +
-      '📄 Publicaciones: %{customdata.posts}<br>' +
-      '💬 Comentarios: %{customdata.comms}<br>' +
-      '⚖️ Balance de postura: %{customdata.bal:+.1f}%<extra></extra>';
+      'Positivo: %{customdata.pos:.1f}%<br>' +
+      'Negativo: %{customdata.neg:.1f}%<br>' +
+      '<b>Neutro: %{customdata.neu:.1f}%</b><br>' +
+      'Publicaciones: %{customdata.posts}<br>' +
+      'Comentarios: %{customdata.comms}<br>' +
+      'Balance de postura: %{customdata.bal:+.1f}%<extra></extra>';
 
     const hoverTemplateBal =
       '<b>%{customdata.periodo}</b><br>' +
-      '⚖️ <b>Balance de postura: %{customdata.bal:+.1f}%</b><br>' +
-      '🟢 Positivo: %{customdata.pos:.1f}%<br>' +
-      '🔴 Negativo: %{customdata.neg:.1f}%<br>' +
-      '⚪ Neutro: %{customdata.neu:.1f}%<br>' +
-      '📄 Publicaciones: %{customdata.posts}<br>' +
-      '💬 Comentarios: %{customdata.comms}<extra></extra>';
+      '<b>Balance de postura: %{customdata.bal:+.1f}%</b><br>' +
+      'Positivo: %{customdata.pos:.1f}%<br>' +
+      'Negativo: %{customdata.neg:.1f}%<br>' +
+      'Neutro: %{customdata.neu:.1f}%<br>' +
+      'Publicaciones: %{customdata.posts}<br>' +
+      'Comentarios: %{customdata.comms}<extra></extra>';
 
     const tracePositivo = {
       x: xVals,
       y: serie.map(p => p.positivo),
-      name: '🟢 Positivo',
+      name: 'Positivo',
       type: 'scatter',
       mode: 'lines+markers',
       line: { color: '#16a34a', width: 3, shape: 'spline' },
@@ -1563,7 +1652,7 @@
     const traceNegativo = {
       x: xVals,
       y: serie.map(p => p.negativo),
-      name: '🔴 Negativo',
+      name: 'Negativo',
       type: 'scatter',
       mode: 'lines+markers',
       line: { color: '#dc2626', width: 3, shape: 'spline' },
@@ -1575,7 +1664,7 @@
     const traceNeutro = {
       x: xVals,
       y: serie.map(p => p.neutro),
-      name: '⚪ Neutro',
+      name: 'Neutro',
       type: 'scatter',
       mode: 'lines+markers',
       line: { color: '#64748b', width: 2, dash: 'dot', shape: 'spline' },
@@ -1587,7 +1676,7 @@
     const traceBalance = {
       x: xVals,
       y: serie.map(p => p.balance_postura),
-      name: '⚖️ Balance de postura (Eje der.)',
+      name: 'Balance de postura (Eje der.)',
       type: 'scatter',
       mode: 'lines+markers',
       yaxis: 'y2',
@@ -1658,5 +1747,290 @@
 
     Plotly.newPlot(chartDiv, [tracePositivo, traceNegativo, traceNeutro, traceBalance], layout, config);
   }
+
+  // ── Widget de Conteo y Sección Independiente de Extracciones ─────────────
+  const apifyCounterWidget = document.getElementById('social-apify-counter-widget');
+  const apifyBadge = document.getElementById('apify-counter-badge');
+  const apifyCuotaBadge = document.getElementById('apify-cuota-badge');
+  const apifyCountPosts = document.getElementById('apify-count-posts');
+  const apifyCountComments = document.getElementById('apify-count-comments');
+  const apifyCountRuns = document.getElementById('apify-count-runs');
+  const apifyCostEstimate = document.getElementById('apify-cost-estimate');
+  const apifyPeriodSelector = document.getElementById('apify-period-selector');
+  const apifyAdminToggle = document.getElementById('apify-admin-toggle');
+  const apifyVerGlobal = document.getElementById('apify-ver-global');
+  const apifyBtnToggleLog = document.getElementById('btn-toggle-apify-log');
+
+  // Alertas de cuota mensual
+  const socialCuotaAlert = document.getElementById('social-cuota-alert');
+  const actividadCuotaAlert = document.getElementById('actividad-cuota-alert');
+
+  // Sección independiente Actividad de Extracciones
+  const actividadBadgeFecha = document.getElementById('actividad-badge-fecha');
+  const actividadPeriodSelector = document.getElementById('actividad-period-selector');
+  const actividadAdminToggle = document.getElementById('actividad-admin-toggle');
+  const actividadVerGlobal = document.getElementById('actividad-ver-global');
+  const actividadKpiPosts = document.getElementById('actividad-kpi-posts');
+  const actividadKpiPostsSub = document.getElementById('actividad-kpi-posts-sub');
+  const actividadKpiComments = document.getElementById('actividad-kpi-comments');
+  const actividadKpiCommentsSub = document.getElementById('actividad-kpi-comments-sub');
+  const actividadKpiCost = document.getElementById('actividad-kpi-cost');
+  const actividadKpiRuns = document.getElementById('actividad-kpi-runs');
+  const actividadTableBody = document.getElementById('actividad-table-body');
+  const actividadEmptyState = document.getElementById('actividad-empty-state');
+  const btnVolverSocial = document.getElementById('btn-volver-social');
+
+  let apifyPeriodoActual = 'mes';
+  let currentApifyData = null;
+
+  async function cargarContadorApify(periodo) {
+    if (!apifyCounterWidget && !actividadTableBody) return;
+    if (periodo) apifyPeriodoActual = periodo;
+
+    const esAdmin = typeof hasRole === 'function' && hasRole('admin');
+    if (apifyAdminToggle) apifyAdminToggle.hidden = !esAdmin;
+    if (actividadAdminToggle) actividadAdminToggle.hidden = !esAdmin;
+
+    const vistaGlobalActiva = (apifyVerGlobal && apifyVerGlobal.checked) || (actividadVerGlobal && actividadVerGlobal.checked);
+    const vista = vistaGlobalActiva ? 'global' : 'mi';
+
+    try {
+      const res = await fetch(`/api/social/consumo?periodo=${encodeURIComponent(apifyPeriodoActual)}&vista=${vista}`, {
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      actualizarUIContadorApify(data);
+    } catch (err) {
+      console.warn('No se pudo actualizar la actividad de extracciones:', err);
+    }
+  }
+
+  function actualizarUIContadorApify(data) {
+    if (!data) return;
+    currentApifyData = data;
+
+    const postsStr = Number(data.posts_scrapeados || 0).toLocaleString('es-MX');
+    const comsStr = Number(data.comentarios_scrapeados || 0).toLocaleString('es-MX');
+    const runsStr = Number(data.llamadas_apify || 0).toLocaleString('es-MX');
+
+    const costo = Number(data.costo_estimado_usd || 0);
+    let costoTxt = '$0.00 USD';
+    if (costo > 0 && costo < 0.01) {
+      costoTxt = `$${costo.toFixed(3)} USD`;
+    } else if (costo >= 0.01) {
+      costoTxt = `$${costo.toFixed(2)} USD`;
+    }
+
+    // Fecha de inicio de registro
+    let fechaTexto = 'Sin extracciones aún';
+    if (data.fecha_inicio_conteo) {
+      try {
+        const partes = String(data.fecha_inicio_conteo).split('-');
+        if (partes.length === 3) {
+          const anio = parseInt(partes[0], 10);
+          const mes = parseInt(partes[1], 10) - 1;
+          const dia = parseInt(partes[2], 10);
+          const d = new Date(anio, mes, dia);
+          fechaTexto = d.toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' });
+        } else {
+          fechaTexto = data.fecha_inicio_conteo;
+        }
+      } catch (_) {
+        fechaTexto = data.fecha_inicio_conteo;
+      }
+    }
+    const prefijo = data.es_global ? 'Equipo desde' : 'Registro';
+
+    // 1. Widget superior derecho en Social Listening
+    if (apifyCountPosts) apifyCountPosts.textContent = postsStr;
+    if (apifyCountComments) apifyCountComments.textContent = comsStr;
+    if (apifyCountRuns) apifyCountRuns.textContent = runsStr;
+    if (apifyCostEstimate) apifyCostEstimate.textContent = costoTxt;
+    if (apifyBadge) {
+      apifyBadge.textContent = `${prefijo}: ${fechaTexto}`;
+      apifyBadge.title = `${data.es_global ? 'Conteo global del equipo desde' : 'Inicio de registro de extracciones'}: ${fechaTexto}`;
+    }
+
+    const cuotaExcedida = !!data.cuota_excedida;
+    const postsMes = Number(data.posts_mes ?? data.posts_scrapeados ?? 0);
+    const comsMes = Number(data.comentarios_mes ?? data.comentarios_scrapeados ?? 0);
+    const limitePosts = Number(data.limite_posts_mes || 5000);
+    const limiteComs = Number(data.limite_comentarios_mes || 75000);
+
+    if (apifyCuotaBadge) {
+      apifyCuotaBadge.hidden = !cuotaExcedida;
+    }
+
+    if (socialCuotaAlert) {
+      socialCuotaAlert.hidden = !cuotaExcedida;
+      socialCuotaAlert.style.display = cuotaExcedida ? 'flex' : 'none';
+    }
+    if (actividadCuotaAlert) {
+      actividadCuotaAlert.hidden = !cuotaExcedida;
+      actividadCuotaAlert.style.display = cuotaExcedida ? 'flex' : 'none';
+    }
+
+    // 2. Sección Actividad de Extracciones
+    if (actividadKpiPosts) actividadKpiPosts.textContent = postsStr;
+    if (actividadKpiPostsSub) {
+      const pctP = ((postsMes / limitePosts) * 100).toFixed(1);
+      actividadKpiPostsSub.textContent = `Cuota: ${postsMes.toLocaleString('es-MX')} / ${limitePosts.toLocaleString('es-MX')} (${pctP}%)`;
+    }
+    if (actividadKpiComments) actividadKpiComments.textContent = comsStr;
+    if (actividadKpiCommentsSub) {
+      const pctC = ((comsMes / limiteComs) * 100).toFixed(1);
+      actividadKpiCommentsSub.textContent = `Cuota: ${comsMes.toLocaleString('es-MX')} / ${limiteComs.toLocaleString('es-MX')} (${pctC}%)`;
+    }
+    if (actividadKpiCost) actividadKpiCost.textContent = costoTxt;
+    if (actividadKpiRuns) actividadKpiRuns.textContent = runsStr;
+    if (actividadBadgeFecha) {
+      actividadBadgeFecha.textContent = `${prefijo}: ${fechaTexto}`;
+      actividadBadgeFecha.title = `${data.es_global ? 'Conteo global del equipo desde' : 'Inicio de registro'}: ${fechaTexto}`;
+    }
+
+    // 3. Renderizar tabla de detalle en la sección independiente
+    if (actividadTableBody) {
+      const actividades = data.actividades_recientes || [];
+      if (actividades.length === 0) {
+        actividadTableBody.innerHTML = '';
+        if (actividadEmptyState) actividadEmptyState.hidden = false;
+      } else {
+        if (actividadEmptyState) actividadEmptyState.hidden = true;
+        let html = '';
+        actividades.forEach(act => {
+          const esPerfil = act.tipo === 'perfil';
+          const tipoBadgeBg = esPerfil ? '#eff6ff' : '#f0fdf4';
+          const tipoBadgeColor = esPerfil ? '#1e40af' : '#166534';
+          const tipoLabel = esPerfil ? 'Perfil' : 'Publicación';
+
+          const fecha = act.timestamp ? act.timestamp.replace('T', ' ').slice(0, 16) : '—';
+          const urlRaw = act.url_objetivo || '';
+          const urlCorta = escapeHtml(urlRaw.replace(/^https?:\/\/(www\.)?facebook\.com\/?/, 'fb/'));
+
+          html += `
+            <tr style="border-bottom:1px solid #f1f5f9;transition:background 0.15s">
+              <td style="padding:10px 14px;color:#64748b;white-space:nowrap;font-size:0.8rem">${fecha}</td>
+              <td style="padding:10px 14px">
+                <span style="display:inline-block;padding:3px 9px;border-radius:6px;background:${tipoBadgeBg};color:${tipoBadgeColor};font-size:0.74rem;font-weight:600">
+                  ${tipoLabel}
+                </span>
+              </td>
+              <td style="padding:10px 14px;font-weight:600;color:#0f172a">${escapeHtml(act.usuario || '—')}</td>
+              <td style="padding:10px 14px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                <a href="${escapeHtml(urlRaw)}" target="_blank" rel="noopener noreferrer" style="color:#2563eb;text-decoration:none;font-weight:500" title="Abrir enlace en Facebook en nueva pestaña">
+                  ${urlCorta} ↗
+                </a>
+              </td>
+              <td style="padding:10px 14px;text-align:right;font-weight:700;color:#0f172a">${Number(act.posts_scrapeados || 0).toLocaleString('es-MX')}</td>
+              <td style="padding:10px 14px;text-align:right;font-weight:700;color:#2563eb">${Number(act.comentarios_scrapeados || 0).toLocaleString('es-MX')}</td>
+            </tr>
+          `;
+        });
+        actividadTableBody.innerHTML = html;
+      }
+    }
+  }
+
+  // Sincronización de selector de periodo
+  function setPeriodoExtracciones(periodo) {
+    apifyPeriodoActual = periodo || 'mes';
+
+    // Widget buttons
+    if (apifyPeriodSelector) {
+      apifyPeriodSelector.querySelectorAll('.btn-period-apify').forEach(b => {
+        const activo = (b.dataset.period === apifyPeriodoActual);
+        b.classList.toggle('active', activo);
+        b.style.background = activo ? '#ffffff' : 'transparent';
+        b.style.color = activo ? '#0f172a' : '#64748b';
+        b.style.boxShadow = activo ? '0 1px 2px rgba(0,0,0,0.06)' : 'none';
+        b.style.fontWeight = activo ? '700' : '600';
+      });
+    }
+
+    // Sección independiente buttons
+    if (actividadPeriodSelector) {
+      actividadPeriodSelector.querySelectorAll('.btn-period-actividad').forEach(b => {
+        const activo = (b.dataset.period === apifyPeriodoActual);
+        b.classList.toggle('active', activo);
+        b.style.background = activo ? '#ffffff' : 'transparent';
+        b.style.color = activo ? '#0f172a' : '#64748b';
+        b.style.boxShadow = activo ? '0 1px 2px rgba(0,0,0,0.06)' : 'none';
+        b.style.fontWeight = activo ? '700' : '600';
+      });
+    }
+
+    cargarContadorApify(apifyPeriodoActual);
+  }
+
+  if (apifyPeriodSelector) {
+    apifyPeriodSelector.querySelectorAll('.btn-period-apify').forEach(btn => {
+      btn.addEventListener('click', () => setPeriodoExtracciones(btn.dataset.period));
+    });
+  }
+
+  if (actividadPeriodSelector) {
+    actividadPeriodSelector.querySelectorAll('.btn-period-actividad').forEach(btn => {
+      btn.addEventListener('click', () => setPeriodoExtracciones(btn.dataset.period));
+    });
+  }
+
+  // Sincronización checkbox vista global
+  function syncVistaGlobal(checked) {
+    if (apifyVerGlobal) apifyVerGlobal.checked = checked;
+    if (actividadVerGlobal) actividadVerGlobal.checked = checked;
+    cargarContadorApify(apifyPeriodoActual);
+  }
+
+  if (apifyVerGlobal) {
+    apifyVerGlobal.addEventListener('change', (e) => syncVistaGlobal(e.target.checked));
+  }
+  if (actividadVerGlobal) {
+    actividadVerGlobal.addEventListener('change', (e) => syncVistaGlobal(e.target.checked));
+  }
+
+  // Navegación a la sección independiente
+  if (apifyBtnToggleLog) {
+    apifyBtnToggleLog.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (typeof activateTab === 'function') {
+        activateTab('actividad-social');
+      }
+    });
+  }
+
+  // Botón volver a Redes Sociales desde la sección independiente
+  if (btnVolverSocial) {
+    btnVolverSocial.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (typeof activateTab === 'function') {
+        activateTab('social');
+      }
+    });
+  }
+
+  // Actualizar al entrar a Social Listening o a Actividad de Extracciones
+  document.addEventListener('tab:changed', (e) => {
+    if (e.detail === 'social' || e.detail === 'actividad-social') {
+      cargarContadorApify(apifyPeriodoActual);
+    }
+  });
+
+  const tabSocialBtn = document.querySelector('.tab[data-tab="social"]');
+  if (tabSocialBtn) {
+    tabSocialBtn.addEventListener('click', () => cargarContadorApify(apifyPeriodoActual));
+  }
+
+  const tabActividadBtn = document.querySelector('.tab[data-tab="actividad-social"]');
+  if (tabActividadBtn) {
+    tabActividadBtn.addEventListener('click', () => cargarContadorApify(apifyPeriodoActual));
+  }
+
+  // Exportar global para recarga manual o desde otras partes de la app
+  window.cargarContadorApify = cargarContadorApify;
+
+  // Carga inicial
+  cargarContadorApify(apifyPeriodoActual);
 
 })();

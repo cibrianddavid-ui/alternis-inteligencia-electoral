@@ -1,9 +1,11 @@
 """Persistencia SQLite para Social Listening: posts, comentarios, caché."""
 from __future__ import annotations
 
+from datetime import datetime, timezone, timedelta
 import hashlib
 import json
 import logging
+import os
 import re
 from collections.abc import Iterable
 from typing import Any, Optional
@@ -96,6 +98,22 @@ def asegurar_esquema_social() -> None:
             )
             """
         )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS social_apify_consumo (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                usuario TEXT NOT NULL DEFAULT 'anonimo',
+                tipo TEXT NOT NULL,
+                actor TEXT NOT NULL,
+                url_objetivo TEXT NOT NULL,
+                posts_scrapeados INTEGER NOT NULL DEFAULT 0,
+                comentarios_scrapeados INTEGER NOT NULL DEFAULT 0,
+                run_id TEXT,
+                detalles_json TEXT
+            )
+            """
+        )
 
         # Compatibilidad con instalaciones existentes.
         for columna, definicion in (
@@ -108,6 +126,7 @@ def asegurar_esquema_social() -> None:
             ("max_comentarios_scrapeados", "INTEGER NOT NULL DEFAULT 0"),
             ("perfil_nombre", "TEXT"),
             ("canonical_url", "TEXT"),
+            ("comments_count", "INTEGER NOT NULL DEFAULT 0"),
         ):
             _agregar_columna_si_falta(conn, "social_posts", columna, definicion)
 
@@ -137,6 +156,13 @@ def asegurar_esquema_social() -> None:
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_social_comentarios_analisis ON social_comentarios(analizado, analisis_version)"
         )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_social_apify_user_time ON social_apify_consumo(usuario, timestamp)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_social_apify_timestamp ON social_apify_consumo(timestamp)"
+        )
+        _agregar_columna_si_falta(conn, "social_apify_consumo", "usuario", "TEXT NOT NULL DEFAULT 'anonimo'")
         conn.execute(
             "UPDATE social_posts SET canonical_url = post_url WHERE canonical_url IS NULL OR canonical_url = ''"
         )
@@ -248,15 +274,16 @@ def db_guardar_posts(url_perfil: str, posts_meta: list[dict]) -> set[str]:
             p_perfil_url = str(p.get("perfil_url") or url_perfil or "").strip()
             p_perfil_nombre = _inferir_nombre_perfil(p_perfil_url, str(p.get("perfil_nombre") or ""))
             canonical_url = str(p.get("canonical_url") or post_url).strip().rstrip("/")
+            p_comments_count = int(p.get("comments_count") or p.get("comments") or 0)
 
             conn.execute(
                 """
                 INSERT OR IGNORE INTO social_posts
                 (post_url, url_perfil, perfil_nombre, comentarios_scrapeados, creado,
-                 max_comentarios_scrapeados, canonical_url)
-                VALUES (?, ?, ?, 0, ?, 0, ?)
+                 max_comentarios_scrapeados, canonical_url, comments_count)
+                VALUES (?, ?, ?, 0, ?, 0, ?, ?)
                 """,
-                (post_url, p_perfil_url, p_perfil_nombre, ahora_str, canonical_url),
+                (post_url, p_perfil_url, p_perfil_nombre, ahora_str, canonical_url, p_comments_count),
             )
             conn.execute(
                 """
@@ -267,6 +294,7 @@ def db_guardar_posts(url_perfil: str, posts_meta: list[dict]) -> set[str]:
                     texto_post = CASE WHEN ? != '' THEN ? ELSE texto_post END,
                     fecha_post = CASE WHEN ? != '' THEN ? ELSE fecha_post END,
                     canonical_url = CASE WHEN ? != '' THEN ? ELSE canonical_url END,
+                    comments_count = CASE WHEN ? > 0 THEN ? ELSE comments_count END,
                     post_likes = ?,
                     actualizado = ?
                 WHERE post_url = ? OR post_url = ?
@@ -284,6 +312,8 @@ def db_guardar_posts(url_perfil: str, posts_meta: list[dict]) -> set[str]:
                     str(p.get("fecha") or ""),
                     canonical_url,
                     canonical_url,
+                    p_comments_count,
+                    p_comments_count,
                     int(p.get("likes") or 0),
                     ahora_str,
                     post_url,
@@ -336,7 +366,9 @@ def db_obtener_estado_posts(url_perfil: str, post_urls: list[str]) -> dict[str, 
             filas = conn.execute(
                 f"""
                 SELECT post_url, canonical_url, comentarios_scrapeados, comentarios_actualizados_en,
-                       max_comentarios_scrapeados, fecha_post, texto_post
+                       max_comentarios_scrapeados, fecha_post, texto_post,
+                       COALESCE(comments_count, 0) AS comments_count,
+                       (SELECT COUNT(*) FROM social_comentarios WHERE post_url = social_posts.post_url OR post_url = social_posts.canonical_url) AS total_comentarios_en_bd
                 FROM social_posts
                 WHERE url_perfil = ? AND (post_url IN ({placeholders}) OR canonical_url IN ({placeholders}))
                 """,
@@ -346,7 +378,9 @@ def db_obtener_estado_posts(url_perfil: str, post_urls: list[str]) -> dict[str, 
             filas = conn.execute(
                 f"""
                 SELECT post_url, canonical_url, comentarios_scrapeados, comentarios_actualizados_en,
-                       max_comentarios_scrapeados, fecha_post, texto_post
+                       max_comentarios_scrapeados, fecha_post, texto_post,
+                       COALESCE(comments_count, 0) AS comments_count,
+                       (SELECT COUNT(*) FROM social_comentarios WHERE post_url = social_posts.post_url OR post_url = social_posts.canonical_url) AS total_comentarios_en_bd
                 FROM social_posts
                 WHERE post_url IN ({placeholders}) OR canonical_url IN ({placeholders})
                 """,
@@ -362,6 +396,8 @@ def db_obtener_estado_posts(url_perfil: str, post_urls: list[str]) -> dict[str, 
             "max_comentarios_scrapeados": int(f["max_comentarios_scrapeados"] or 0),
             "fecha_post": f["fecha_post"],
             "texto_post": f["texto_post"] or "",
+            "comments_count": int(f["comments_count"] or 0),
+            "total_comentarios_en_bd": int(f["total_comentarios_en_bd"] or 0),
         }
         estados[p_url_val] = datos_estado
         estados[p_url_val.rstrip("/")] = datos_estado
@@ -399,17 +435,23 @@ def db_marcar_post_refrescado(post_url: str, max_comentarios: int) -> None:
 
 
 def db_obtener_posts_meta(url_perfil: str, limite: int) -> list[dict]:
-    """Fallback de posts almacenados cuando Apify-posts no está disponible."""
+    """Posts almacenados en BD para el perfil dado, tolerando variaciones de URL y slashes."""
+    u_sin = url_perfil.strip().rstrip("/")
+    u_con = u_sin + "/"
+    u_limpia = _limpiar_url_facebook(u_sin)
+    candidatos = list(dict.fromkeys([u_sin, u_con, u_limpia, u_limpia + "/"]))
+    placeholders = ",".join("?" for _ in candidatos)
     with basedatos.conectar() as conn:
         filas = conn.execute(
-            """
-            SELECT post_url, post_id, texto_post, fecha_post, post_likes, perfil_nombre, url_perfil
+            f"""
+            SELECT post_url, post_id, texto_post, fecha_post, post_likes, perfil_nombre, url_perfil,
+                   actualizado, creado, COALESCE(comments_count, 0) AS comments_count
             FROM social_posts
-            WHERE url_perfil = ?
+            WHERE url_perfil IN ({placeholders})
             ORDER BY COALESCE(fecha_post, '') DESC, rowid DESC
             LIMIT ?
             """,
-            (url_perfil, limite),
+            [*candidatos, limite],
         ).fetchall()
 
     return [
@@ -422,6 +464,9 @@ def db_obtener_posts_meta(url_perfil: str, limite: int) -> list[dict]:
             "perfil_nombre": _inferir_nombre_perfil(f["url_perfil"] or url_perfil, f["perfil_nombre"] or "Facebook"),
             "perfil_url": f["url_perfil"] or url_perfil,
             "url_perfil": f["url_perfil"] or url_perfil,
+            "actualizado": f["actualizado"] or "",
+            "creado": f["creado"] or "",
+            "comments_count": int(f["comments_count"] or 0),
         }
         for f in filas
     ]
@@ -915,3 +960,294 @@ def db_guardar_cache_manual(
             )
     except Exception as exc:
         log.warning("No fue posible guardar la caché de publicaciones manuales: %s", exc)
+
+
+# ---------------------------------------------------------------------------
+# Control y Auditoría de Consumo de Apify
+# ---------------------------------------------------------------------------
+
+
+def db_registrar_consumo_apify(
+    usuario: str,
+    tipo: str,
+    actor: str,
+    url_objetivo: str,
+    posts_scrapeados: int = 0,
+    comentarios_scrapeados: int = 0,
+    run_id: Optional[str] = None,
+    detalles: Optional[dict[str, Any]] = None,
+) -> None:
+    """Registra una llamada real a Apify para control de consumo por usuario."""
+    asegurar_esquema_social()
+    ahora_iso = datetime.now(timezone.utc).isoformat()
+    detalles_str = json.dumps(detalles, ensure_ascii=False) if detalles else None
+    user_clean = (usuario or "").strip() or "anonimo"
+
+    try:
+        with basedatos.transaccion() as conn:
+            conn.execute(
+                """
+                INSERT INTO social_apify_consumo (
+                    timestamp, usuario, tipo, actor, url_objetivo,
+                    posts_scrapeados, comentarios_scrapeados, run_id, detalles_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    ahora_iso,
+                    user_clean,
+                    tipo,
+                    actor,
+                    url_objetivo,
+                    int(posts_scrapeados or 0),
+                    int(comentarios_scrapeados or 0),
+                    run_id,
+                    detalles_str,
+                ),
+            )
+    except Exception as exc:
+        log.warning("No fue posible registrar el consumo de Apify: %s", exc)
+
+
+def db_obtener_resumen_consumo(
+    usuario: str,
+    periodo: str = "mes",
+    ver_global: bool = False,
+) -> dict[str, Any]:
+    """Obtiene el acumulado de posts, comentarios y llamadas a Apify por periodo y usuario."""
+    asegurar_esquema_social()
+    ahora = datetime.now(timezone.utc)
+    user_clean = (usuario or "").strip() or "anonimo"
+
+    if periodo == "hoy":
+        desde_dt: Optional[datetime] = datetime(ahora.year, ahora.month, ahora.day, 0, 0, 0, tzinfo=timezone.utc)
+    elif periodo == "semana":
+        desde_dt = ahora - timedelta(days=7)
+    elif periodo == "todo":
+        desde_dt = None
+    else:  # 'mes' por defecto
+        periodo = "mes"
+        desde_dt = datetime(ahora.year, ahora.month, 1, 0, 0, 0, tzinfo=timezone.utc)
+
+    desde_iso = desde_dt.isoformat() if desde_dt else ""
+
+    where_clauses: list[str] = []
+    params: list[Any] = []
+
+    if not ver_global:
+        where_clauses.append("usuario = ?")
+        params.append(user_clean)
+
+    if desde_iso:
+        where_clauses.append("timestamp >= ?")
+        params.append(desde_iso)
+
+    where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+    with basedatos.conectar() as conn:
+        fila_totales = conn.execute(
+            f"""
+            SELECT
+                COALESCE(SUM(posts_scrapeados), 0) AS total_posts,
+                COALESCE(SUM(comentarios_scrapeados), 0) AS total_comentarios,
+                COUNT(*) AS total_llamadas
+            FROM social_apify_consumo
+            {where_sql}
+            """,
+            params,
+        ).fetchone()
+
+        total_posts = int(fila_totales["total_posts"] if fila_totales else 0)
+        total_comentarios = int(fila_totales["total_comentarios"] if fila_totales else 0)
+        total_llamadas = int(fila_totales["total_llamadas"] if fila_totales else 0)
+
+        where_inicio = "" if ver_global else "WHERE usuario = ?"
+        params_inicio = [] if ver_global else [user_clean]
+        fila_inicio = conn.execute(
+            f"""
+            SELECT MIN(timestamp) AS primera_fecha
+            FROM social_apify_consumo
+            {where_inicio}
+            """,
+            params_inicio,
+        ).fetchone()
+
+        primera_fecha_raw = fila_inicio["primera_fecha"] if fila_inicio else None
+        if primera_fecha_raw:
+            fecha_inicio_conteo = str(primera_fecha_raw)[:10]
+        else:
+            fecha_inicio_conteo = ahora.strftime("%Y-%m-%d")
+
+        filas_recientes = conn.execute(
+            f"""
+            SELECT id, timestamp, usuario, tipo, actor, url_objetivo,
+                   posts_scrapeados, comentarios_scrapeados, run_id
+            FROM social_apify_consumo
+            {where_sql}
+            ORDER BY id DESC
+            LIMIT 10
+            """,
+            params,
+        ).fetchall()
+
+        recientes = [
+            {
+                "id": f["id"],
+                "timestamp": f["timestamp"],
+                "usuario": f["usuario"],
+                "tipo": f["tipo"],
+                "actor": f["actor"],
+                "url_objetivo": f["url_objetivo"],
+                "posts_scrapeados": f["posts_scrapeados"],
+                "comentarios_scrapeados": f["comentarios_scrapeados"],
+                "run_id": f["run_id"],
+            }
+            for f in filas_recientes
+        ]
+
+    try:
+        costo_post = float(os.getenv("APIFY_COSTO_POR_POST", "0.005"))
+    except ValueError:
+        costo_post = 0.005
+
+    try:
+        costo_comentario = float(os.getenv("APIFY_COSTO_POR_COMENTARIO", "0.0005"))
+    except ValueError:
+        costo_comentario = 0.0005
+
+    costo_estimado_usd = round(
+        (total_posts * costo_post) + (total_comentarios * costo_comentario),
+        4,
+    )
+
+    try:
+        max_posts_mes = int(os.getenv("SOCIAL_LIMITE_POSTS_MES", "5000"))
+    except ValueError:
+        max_posts_mes = 5000
+
+    try:
+        max_coms_mes = int(os.getenv("SOCIAL_LIMITE_COMS_MES", "75000"))
+    except ValueError:
+        max_coms_mes = 75000
+
+    if periodo == "mes" and not ver_global:
+        posts_mes = total_posts
+        coms_mes = total_comentarios
+    else:
+        inicio_mes_iso = datetime(ahora.year, ahora.month, 1, 0, 0, 0, tzinfo=timezone.utc).isoformat()
+        with basedatos.conectar() as conn:
+            where_cuota = "WHERE timestamp >= ?" if ver_global else "WHERE usuario = ? AND timestamp >= ?"
+            params_cuota = [inicio_mes_iso] if ver_global else [user_clean, inicio_mes_iso]
+            f_mes = conn.execute(
+                f"""
+                SELECT
+                    COALESCE(SUM(posts_scrapeados), 0) AS p,
+                    COALESCE(SUM(comentarios_scrapeados), 0) AS c
+                FROM social_apify_consumo
+                {where_cuota}
+                """,
+                params_cuota,
+            ).fetchone()
+            posts_mes = int(f_mes["p"] if f_mes else 0)
+            coms_mes = int(f_mes["c"] if f_mes else 0)
+
+    cuota_excedida = (posts_mes >= max_posts_mes) or (coms_mes >= max_coms_mes)
+    pct_posts = round(min((posts_mes / max_posts_mes) * 100, 100.0), 1) if max_posts_mes > 0 else 100.0
+    pct_coms = round(min((coms_mes / max_coms_mes) * 100, 100.0), 1) if max_coms_mes > 0 else 100.0
+
+    return {
+        "usuario": "Todos (Global)" if ver_global else user_clean,
+        "es_global": ver_global,
+        "periodo": periodo,
+        "fecha_inicio_conteo": fecha_inicio_conteo,
+        "desde": desde_iso,
+        "posts_scrapeados": total_posts,
+        "comentarios_scrapeados": total_comentarios,
+        "llamadas_apify": total_llamadas,
+        "costo_estimado_usd": costo_estimado_usd,
+        "actividades_recientes": recientes,
+        "limite_posts_mes": max_posts_mes,
+        "limite_comentarios_mes": max_coms_mes,
+        "posts_mes": posts_mes,
+        "comentarios_mes": coms_mes,
+        "cuota_excedida": cuota_excedida,
+        "porcentaje_posts_mes": pct_posts,
+        "porcentaje_comentarios_mes": pct_coms,
+    }
+
+
+def db_verificar_cuota_scrapeo(
+    usuario: str,
+    limite_posts: Optional[int] = None,
+    limite_comentarios: Optional[int] = None,
+) -> tuple[bool, str, dict[str, Any]]:
+    """Verifica si el usuario ha alcanzado o superado el límite mensual de posts o comentarios.
+
+    Límites por defecto: 5,000 posts y 75,000 comentarios al mes por usuario.
+    Devuelve:
+        (permitido, mensaje_error, info_cuota)
+    """
+    asegurar_esquema_social()
+    try:
+        max_p = limite_posts if limite_posts is not None else int(os.getenv("SOCIAL_LIMITE_POSTS_MES", "5000"))
+    except ValueError:
+        max_p = 5000
+    try:
+        max_c = limite_comentarios if limite_comentarios is not None else int(os.getenv("SOCIAL_LIMITE_COMS_MES", "75000"))
+    except ValueError:
+        max_c = 75000
+
+    ahora = datetime.now(timezone.utc)
+    inicio_mes_iso = datetime(ahora.year, ahora.month, 1, 0, 0, 0, tzinfo=timezone.utc).isoformat()
+    user_clean = (usuario or "").strip() or "anonimo"
+
+    with basedatos.conectar() as conn:
+        f = conn.execute(
+            """
+            SELECT
+                COALESCE(SUM(posts_scrapeados), 0) AS total_posts,
+                COALESCE(SUM(comentarios_scrapeados), 0) AS total_comentarios
+            FROM social_apify_consumo
+            WHERE usuario = ? AND timestamp >= ?
+            """,
+            (user_clean, inicio_mes_iso),
+        ).fetchone()
+
+        posts_usados = int(f["total_posts"] if f else 0)
+        coms_usados = int(f["total_comentarios"] if f else 0)
+
+    excedido_posts = posts_usados >= max_p
+    excedido_coms = coms_usados >= max_c
+    excedido = excedido_posts or excedido_coms
+
+    pct_posts = round(min((posts_usados / max_p) * 100, 100.0), 1) if max_p > 0 else 100.0
+    pct_coms = round(min((coms_usados / max_c) * 100, 100.0), 1) if max_c > 0 else 100.0
+
+    info_cuota = {
+        "usuario": user_clean,
+        "limite_posts": max_p,
+        "limite_comentarios": max_c,
+        "posts_usados": posts_usados,
+        "comentarios_usados": coms_usados,
+        "porcentaje_posts": pct_posts,
+        "porcentaje_comentarios": pct_coms,
+        "excedido": excedido,
+        "excedido_posts": excedido_posts,
+        "excedido_comentarios": excedido_coms,
+    }
+
+    if not excedido:
+        return True, "", info_cuota
+
+    if excedido_posts and excedido_coms:
+        det = f"has alcanzado el límite mensual de publicaciones ({posts_usados:,}/{max_p:,}) y de comentarios ({coms_usados:,}/{max_c:,})"
+    elif excedido_posts:
+        det = f"has alcanzado el límite mensual de publicaciones ({posts_usados:,}/{max_p:,} posts)"
+    else:
+        det = f"has alcanzado el límite mensual de comentarios ({coms_usados:,}/{max_c:,} comentarios)"
+
+    msg = (
+        f"Límite mensual alcanzado: {det}. "
+        "No es posible realizar nuevas extracciones en vivo de redes sociales este mes. "
+        "Comunícate con el administrador para ampliar tu cuota."
+    )
+    return False, msg, info_cuota
