@@ -23,6 +23,7 @@ from groq import Groq, AuthenticationError, RateLimitError, APITimeoutError
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
 from .configuracion import ROOT, cargar_entorno
+from .chat_proveedores import ClienteChatConFallback
 
 cargar_entorno()
 
@@ -195,6 +196,7 @@ class EstadoAplicacion:
         self.calidad: Optional[dict[str, Any]] = None
         self.cartografia: Optional[Cartografia] = None
         self.client: Optional[Groq] = None
+        self.chat_client = None
         self.config: Optional[Config] = None
         # sesión de chat -> {usuario, asistente, ultimo}. Cada sesión pertenece a una persona.
         self.sesiones: dict[str, dict[str, Any]] = {}
@@ -207,6 +209,7 @@ class EstadoAplicacion:
         self.error_asistente = None
         self.error_inicio = None
         self.client = None
+        self.chat_client = None
         self.config = Config(
             # "or": una variable vacía en .env (GROQ_MODEL=) se trata como ausente y usa el valor por defecto.
             sheet_id=os.getenv("GOOGLE_SHEET_ID") or Config.sheet_id,
@@ -215,6 +218,10 @@ class EstadoAplicacion:
             sheet_2018_gid=os.getenv("GOOGLE_SHEET_2018_GID") or Config.sheet_2018_gid,
             sheet_2012_id=os.getenv("GOOGLE_SHEET_2012_ID") or Config.sheet_2012_id,
             sheet_2012_gid=os.getenv("GOOGLE_SHEET_2012_GID") or Config.sheet_2012_gid,
+            sheet_2015_id=os.getenv("GOOGLE_SHEET_2015_ID") or Config.sheet_2015_id,
+            sheet_2015_gid=os.getenv("GOOGLE_SHEET_2015_GID") or Config.sheet_2015_gid,
+            sheet_2021_id=os.getenv("GOOGLE_SHEET_2021_ID") or Config.sheet_2021_id,
+            sheet_2021_gid=os.getenv("GOOGLE_SHEET_2021_GID") or Config.sheet_2021_gid,
             ruta_bd=str(DATA / "electoral.db"),
             modelo=os.getenv("GROQ_MODEL") or Config.modelo,
         )
@@ -225,6 +232,9 @@ class EstadoAplicacion:
             log.warning("Groq no configurado. Carpeta del proyecto en ejecución: %s", ROOT)
             self.error_asistente = ("El servidor no encontró una clave de Groq. En la carpeta de esta instalación "
                                     "ejecuta python configurar_claves.py y después reinicia el servidor.")
+        self.chat_client = ClienteChatConFallback(self.client)
+        if not self.chat_client.disponible:
+            self.error_asistente = "Configura DEEPSEEK_API_KEY o GROQ_API_KEY en .env."
         try:
             self.df, self.mapa = preparar_base(self.config)
             self.territorio = Territorio(self.df, self.mapa)
@@ -243,7 +253,7 @@ class EstadoAplicacion:
                 del self.sesiones[sid]
 
     def obtener_asistente(self, session_id: Optional[str], usuario_id: int) -> tuple[str, AsistenteElectoral]:
-        if self.error_inicio or self.client is None or self.df is None or self.config is None:
+        if self.error_inicio or self.chat_client is None or not self.chat_client.disponible or self.df is None or self.config is None:
             raise RuntimeError(self.error_inicio or self.error_asistente or "El asistente no esta disponible.")
         with self.lock:
             self._purgar_sesiones()
@@ -251,7 +261,7 @@ class EstadoAplicacion:
             if entrada is None or entrada["usuario"] != usuario_id:  # nunca se comparten sesiones entre personas
                 session_id = str(uuid.uuid4())
                 entrada = {"usuario": usuario_id, "ultimo": time.time(), "asistente": AsistenteElectoral(
-                    client=self.client, df=self.df, mapa=self.mapa, config=self.config)}
+                    client=self.chat_client, df=self.df, mapa=self.mapa, config=self.config)}
                 self.sesiones[session_id] = entrada
             entrada["ultimo"] = time.time()
             return session_id, entrada["asistente"]

@@ -35,6 +35,10 @@ class Config:
     sheet_2018_gid: str = "1745827419"
     sheet_2012_id: str = "1UZ-IBRkjbF3-b2GkMcA3zDaqNcAf-X-cjC85WcLamJg"
     sheet_2012_gid: str = "792258105"
+    sheet_2015_id: str = "1z2dRTs5EaeYJ9nLZtivwL9dAsQ3bgYley7IoWcYOhxk"
+    sheet_2015_gid: str = "0"
+    sheet_2021_id: str = "1BgnSHylxEin-tN7HFdLq4M2v95KnxGqWNgp0yvQ7k0c"
+    sheet_2021_gid: str = "0"
     ruta_bd: str = "electoral.db"
     tabla: str = "resultados"
     modelo: str = "openai/gpt-oss-120b"
@@ -182,6 +186,8 @@ def cargar_datos(config: Config = CONFIG) -> tuple[pd.DataFrame, dict[str, str]]
     fuentes = [
         (2024, config.url_csv),
         (2018, f"https://docs.google.com/spreadsheets/d/{config.sheet_2018_id}/export?format=csv&gid={config.sheet_2018_gid}"),
+        (2015, f"https://docs.google.com/spreadsheets/d/{config.sheet_2015_id}/export?format=csv&gid={config.sheet_2015_gid}"),
+        (2021, f"https://docs.google.com/spreadsheets/d/{config.sheet_2021_id}/export?format=csv&gid={config.sheet_2021_gid}"),
         (2012, f"https://docs.google.com/spreadsheets/d/{config.sheet_2012_id}/export?format=csv&gid={config.sheet_2012_gid}"),
     ]
     partes = []
