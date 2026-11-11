@@ -10,6 +10,7 @@ from .models import (
     ResultadoPostsManual,
     SocialListeningError,
     ApifyScrapeError,
+    CuotaScrapingExcedidaError,
     TONOS_VALIDOS,
     ANALISIS_VERSION,
     COMPARISON_VERSION,
@@ -20,6 +21,7 @@ from .models import (
     MAX_POSTS_DEFAULT,
     MAX_COMENTARIOS_DEFAULT,
     POST_REFRESH_DAYS,
+    POSTS_REFRESH_MINUTES,
     COMMENTS_REFRESH_MINUTES,
     UNKNOWN_DATE_REFRESH_HOURS,
     UNKNOWN_DATE_REFRESH_TOP_N,
@@ -46,13 +48,16 @@ from .db import (
     db_guardar_cache,
     db_obtener_cache_manual,
     db_guardar_cache_manual,
+    db_registrar_consumo_apify,
+    db_obtener_resumen_consumo,
+    db_verificar_cuota_scrapeo,
     _cache_key_manual,
     _clave_comentario,
     _fingerprint_dataset,
     _deduplicar_comentarios,
     _inferir_nombre_perfil,
 )
-from .scraping import _obtener_posts, _obtener_comentarios, _debe_refrescar_post
+from .scraping import _obtener_posts, _obtener_comentarios, _debe_refrescar_post, _debe_refrescar_perfil_posts
 from .analysis import (
     _extraer_objeto_json,
     _parsear_clasificaciones,
@@ -96,6 +101,8 @@ from .historico import (
     obtener_perfiles_en_bd,
 )
 
+obtener_resumen_consumo = db_obtener_resumen_consumo
+
 __all__ = [
     # models
     "SolicitudSocial", "SolicitudPostsSocial", "ComentarioClasificado", "ResultadoSocial",
@@ -104,7 +111,7 @@ __all__ = [
     "TONOS_VALIDOS", "ANALISIS_VERSION", "COMPARISON_VERSION",
     "LLM_BATCH_SIZE", "THEME_SAMPLE_SIZE", "ACTOR_POSTS", "ACTOR_COMMENTS",
     "MAX_POSTS_DEFAULT", "MAX_COMENTARIOS_DEFAULT",
-    "POST_REFRESH_DAYS", "COMMENTS_REFRESH_MINUTES",
+    "POST_REFRESH_DAYS", "POSTS_REFRESH_MINUTES", "COMMENTS_REFRESH_MINUTES",
     "UNKNOWN_DATE_REFRESH_HOURS", "UNKNOWN_DATE_REFRESH_TOP_N",
     "_limpiar_url_facebook", "_validar_urls_facebook",
     "_ahora_dt", "_parse_datetime", "_es_post_reciente", "_esta_vencido",
@@ -114,10 +121,12 @@ __all__ = [
     "db_obtener_post_meta_por_url", "db_guardar_comentarios", "db_actualizar_tono",
     "db_actualizar_tonos_batch", "db_obtener_comentarios", "db_obtener_cache",
     "db_guardar_cache", "db_obtener_cache_manual", "db_guardar_cache_manual",
+    "db_registrar_consumo_apify", "db_obtener_resumen_consumo", "obtener_resumen_consumo", "db_verificar_cuota_scrapeo",
+    "CuotaScrapingExcedidaError",
     "_cache_key_manual", "_clave_comentario",
     "_fingerprint_dataset", "_deduplicar_comentarios", "_inferir_nombre_perfil",
     # scraping
-    "_obtener_posts", "_obtener_comentarios", "_debe_refrescar_post",
+    "_obtener_posts", "_obtener_comentarios", "_debe_refrescar_post", "_debe_refrescar_perfil_posts",
     # analysis
     "_extraer_objeto_json", "_parsear_clasificaciones",
     "_clasificar_postura_batch", "_clasificar_postura_todos",

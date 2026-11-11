@@ -79,7 +79,10 @@
         <button class="tab" role="tab" aria-selected="false" data-tab="campania">
           <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4v17M5 5h12l-2 4 2 4H5"/></svg><span>Metas y tareas</span>
         </button>
-        <p class="nav-group" data-min-role="admin">Plataforma</p>
+        <p class="nav-group" data-min-role="coordinador">Plataforma</p>
+        <button class="tab" role="tab" aria-selected="false" data-tab="actividad-social" data-min-role="coordinador">
+          <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg><span>Actividad de Extracciones</span>
+        </button>
         <button class="tab" role="tab" aria-selected="false" data-tab="admin" data-min-role="admin">
           <svg class="tab-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg><span>Usuarios y ajustes</span>
         </button>
@@ -506,26 +509,90 @@
         </div>
       </section>
       <section id="social" class="panel" role="tabpanel" data-min-role="coordinador">
-        <header class="topbar">
+        <header class="topbar" style="align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px">
           <div>
             <h1>Social Listening</h1>
           </div>
+
+          <!-- Widget en la esquinita superior derecha -->
+          <div id="social-apify-counter-widget" style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:9px 14px;box-shadow:0 1px 3px rgba(0,0,0,0.03);max-width:560px">
+            <!-- Fila superior: Título, Badge de inicio y Periodos -->
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-size:0.78rem;font-weight:700;color:#0f172a;letter-spacing:-0.01em;white-space:nowrap">Extracciones en Vivo</span>
+                <span id="apify-counter-badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;font-size:0.7rem;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap" title="Fecha de inicio de registro de extracciones">
+                  Inicio: Cargando...
+                </span>
+                <span id="apify-cuota-badge" hidden style="background:#fef2f2;color:#991b1b;border:1px solid #fecaca;font-size:0.68rem;padding:2px 8px;border-radius:10px;font-weight:700;white-space:nowrap" title="Límite mensual alcanzado (5,000 posts o 75,000 comentarios)">
+                  Cuota Agotada
+                </span>
+                <span id="apify-admin-toggle" hidden>
+                  <label style="font-size:0.7rem;color:#475569;display:inline-flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap" title="Ver consumo acumulado de todo el equipo">
+                    <input type="checkbox" id="apify-ver-global" style="cursor:pointer;accent-color:#2563eb"> Equipo
+                  </label>
+                </span>
+              </div>
+
+              <!-- Segmented control de periodos -->
+              <div id="apify-period-selector" style="display:flex;gap:2px;background:#f1f5f9;padding:2px;border-radius:6px;border:1px solid #e2e8f0;flex-shrink:0">
+                <button type="button" class="btn-period-apify" data-period="hoy" style="border:0;padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:600;cursor:pointer;background:transparent;color:#64748b;transition:all 0.15s">Hoy</button>
+                <button type="button" class="btn-period-apify" data-period="semana" style="border:0;padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:600;cursor:pointer;background:transparent;color:#64748b;transition:all 0.15s">Sem</button>
+                <button type="button" class="btn-period-apify active" data-period="mes" style="border:0;padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;cursor:pointer;background:#ffffff;color:#0f172a;box-shadow:0 1px 2px rgba(0,0,0,0.06);transition:all 0.15s">Mes</button>
+                <button type="button" class="btn-period-apify" data-period="todo" style="border:0;padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:600;cursor:pointer;background:transparent;color:#64748b;transition:all 0.15s">Todo</button>
+              </div>
+            </div>
+
+            <!-- Fila inferior: Indicadores métricos y Botón Ver detalles -->
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;font-variant-numeric:tabular-nums">
+              <div style="display:flex;align-items:center;gap:6px">
+                <div style="display:flex;align-items:center;gap:4px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:3px 7px;white-space:nowrap" title="Publicaciones extraídas en vivo desde Facebook">
+                  <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#94a3b8"></span>
+                  <span style="font-size:0.68rem;color:#64748b;font-weight:600">Posts:</span>
+                  <strong id="apify-count-posts" style="font-size:0.88rem;color:#0f172a;font-weight:700">0</strong>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:3px 7px;white-space:nowrap" title="Comentarios recopilados en vivo desde Facebook">
+                  <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#3b82f6"></span>
+                  <span style="font-size:0.68rem;color:#64748b;font-weight:600">Comentarios:</span>
+                  <strong id="apify-count-comments" style="font-size:0.88rem;color:#2563eb;font-weight:700">0</strong>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:3px 7px;white-space:nowrap" title="Inversión y costo operativo estimado de extracción">
+                  <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10b981"></span>
+                  <span style="font-size:0.68rem;color:#64748b;font-weight:600">Gasto Estimado:</span>
+                  <strong id="apify-cost-estimate" style="font-size:0.88rem;color:#059669;font-weight:700">$0.00 USD</strong>
+                </div>
+              </div>
+              <button type="button" id="btn-toggle-apify-log" class="secondary-button" style="padding:4px 10px;font-size:0.75rem;font-weight:600;display:inline-flex;align-items:center;gap:4px;border-radius:6px;margin:0;white-space:nowrap;flex-shrink:0" title="Ver historial y auditoría detallada en sección independiente">
+                Ver detalles ↗
+              </button>
+            </div>
+            <div id="apify-log-details" hidden></div>
+          </div>
         </header>
         <div class="content-area">
+
+          <!-- Alerta de Cuota Mensual Excedida -->
+          <div id="social-cuota-alert" class="auth-error" hidden style="display:none;background:#fff1f2;border:1px solid #fecdd3;color:#9f1239;padding:12px 16px;border-radius:12px;margin-bottom:18px;align-items:flex-start;gap:12px">
+            <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:#e11d48;fill:none;stroke-width:2;flex-shrink:0;margin-top:2px" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <div>
+              <strong style="display:block;font-size:0.88rem;color:#881337">Límite mensual de extracciones alcanzado</strong>
+              <span id="social-cuota-alert-text" style="font-size:0.82rem;color:#9f1239">Has alcanzado el límite mensual permitido de 5,000 publicaciones o 75,000 comentarios. Las nuevas extracciones en vivo de redes sociales están bloqueadas hasta el inicio del próximo mes. Las consultas sobre perfiles y publicaciones guardadas en la base de datos local continúan disponibles.</span>
+            </div>
+          </div>
+
           <!-- Selector de Modo de Análisis -->
           <div
             style="display:flex;gap:8px;margin-bottom:20px;background:#f1f5f9;padding:4px;border-radius:12px;width:fit-content;flex-wrap:wrap">
             <button type="button" id="social-tab-profile-btn" onclick="cambiarModoSocial('perfil')"
               style="border:0;padding:8px 18px;border-radius:9px;font-weight:700;font-size:0.88rem;cursor:pointer;background:#ffffff;color:#0f172a;box-shadow:0 1px 3px rgba(0,0,0,0.08);transition:all 0.2s">
-              👤 Análisis por Perfil
+              Análisis por Perfil
             </button>
             <button type="button" id="social-tab-posts-btn" onclick="cambiarModoSocial('posts')"
               style="border:0;padding:8px 18px;border-radius:9px;font-weight:600;font-size:0.88rem;cursor:pointer;background:transparent;color:#64748b;transition:all 0.2s">
-              📑 Comparativa de Posts
+              Comparativa de Publicaciones
             </button>
             <button type="button" id="social-tab-historico-btn" onclick="cambiarModoSocial('historico')"
               style="border:0;padding:8px 18px;border-radius:9px;font-weight:600;font-size:0.88rem;cursor:pointer;background:transparent;color:#64748b;transition:all 0.2s">
-              📈 Evoluión Histórica
+              Evolución Histórica
             </button>
           </div>
           <script>
@@ -608,22 +675,17 @@
               </form>
               <div id="social-progress" hidden style="margin-top:16px">
                 <div class="progress-steps">
-                  <span id="social-step-1" class="progress-step">⏳ Extrayendo posts…</span>
-                  <span id="social-step-2" class="progress-step" style="opacity:0.4">⏳ Obteniendo comentarios…</span>
-                  <span id="social-step-3" class="progress-step" style="opacity:0.4">⏳ Analizando sentimiento…</span>
-                  <span id="social-step-4" class="progress-step" style="opacity:0.4">⏳ Generando resumen…</span>
+                  <span id="social-step-1" class="progress-step">1. Extrayendo publicaciones…</span>
+                  <span id="social-step-2" class="progress-step" style="opacity:0.4">2. Obteniendo comentarios…</span>
+                  <span id="social-step-3" class="progress-step" style="opacity:0.4">3. Analizando postura y temas…</span>
+                  <span id="social-step-4" class="progress-step" style="opacity:0.4">4. Generando resumen ejecutivo…</span>
                 </div>
               </div>
               <p id="social-error" class="auth-error" role="alert" hidden></p>
             </div>
 
             <div id="social-results" hidden>
-              <div style="display:flex;justify-content:flex-end;margin-top:20px;margin-bottom:-10px">
-                <button type="button" id="social-profile-export-pdf" class="secondary-button"
-                  style="display:inline-flex;align-items:center;gap:6px;font-size:0.85rem;padding:6px 14px">
-                  <span>📥</span> Descargar Reporte de Perfil en PDF
-                </button>
-              </div>
+              <div id="social-freshness-banner" style="margin-top:20px;margin-bottom:-10px"></div>
               <div class="dashboard-grid" style="margin-top:24px">
                 <div class="dashboard-card">
                   <h2>Sentimiento General</h2>
@@ -633,7 +695,7 @@
                 <div class="dashboard-card">
                   <h2>Temas y Sentir del Público <span style="font-size:0.78rem;font-weight:400;color:#6b7280">(Frases
                       Claves Identificados)</span></h2>
-                  <div id="social-ngrams" style="margin-top:8px"></div>
+                  <div id="social-ngrams" style="margin-top:8px;max-height:440px;overflow-y:auto;padding-right:6px"></div>
                 </div>
               </div>
               <div class="dashboard-card" style="margin-top:16px">
@@ -654,9 +716,9 @@
                   </div>
                   <div id="social-filter-tabs" style="display:flex;gap:6px;flex-wrap:wrap">
                     <button type="button" class="filter-chip active" data-filter="todos">Todos</button>
-                    <button type="button" class="filter-chip" data-filter="negativo">🔴 Críticas / Reclamos</button>
-                    <button type="button" class="filter-chip" data-filter="positivo">🟢 Apoyos / Simpatizantes</button>
-                    <button type="button" class="filter-chip" data-filter="neutro">⚪ Dudas / Neutros</button>
+                    <button type="button" class="filter-chip" data-filter="negativo">Críticas y reclamos</button>
+                    <button type="button" class="filter-chip" data-filter="positivo">Apoyos y simpatizantes</button>
+                    <button type="button" class="filter-chip" data-filter="neutro">Consultas y neutros</button>
                   </div>
                 </div>
                 <div id="social-comments-grid"
@@ -700,13 +762,10 @@
               </form>
               <div id="social-posts-progress" hidden style="margin-top:16px">
                 <div class="progress-steps">
-                  <span id="social-posts-step-1" class="progress-step">⏳ Sincronizando publicaciones…</span>
-                  <span id="social-posts-step-2" class="progress-step" style="opacity:0.4">⏳ Obteniendo
-                    comentarios…</span>
-                  <span id="social-posts-step-3" class="progress-step" style="opacity:0.4">⏳ Analizando postura y
-                    temas…</span>
-                  <span id="social-posts-step-4" class="progress-step" style="opacity:0.4">⏳ Generando
-                    comparativa…</span>
+                  <span id="social-posts-step-1" class="progress-step">1. Sincronizando publicaciones…</span>
+                  <span id="social-posts-step-2" class="progress-step" style="opacity:0.4">2. Obteniendo comentarios…</span>
+                  <span id="social-posts-step-3" class="progress-step" style="opacity:0.4">3. Analizando postura y temas…</span>
+                  <span id="social-posts-step-4" class="progress-step" style="opacity:0.4">4. Generando comparativa…</span>
                 </div>
               </div>
               <p id="social-posts-error" class="auth-error" role="alert" hidden></p>
@@ -768,6 +827,107 @@
             <div id="social-historico-results" hidden style="margin-top:20px"></div>
           </div>
         </div>
+      </section>
+      <section id="actividad-social" class="panel" role="tabpanel" data-min-role="coordinador">
+        <header class="topbar" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:20px">
+          <div>
+            <h1>Actividad de Extracciones</h1>
+            <p style="margin:4px 0 0;color:var(--muted);font-size:0.9rem">
+              Auditoría y registro cronológico de sincronizaciones, publicaciones y comentarios monitoreados en vivo.
+            </p>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <button type="button" id="btn-volver-social" class="secondary-button" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:0.84rem;font-weight:600">
+              <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              <span>Volver a Redes Sociales</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- Barra de Filtros y Periodo -->
+        <div style="background:#ffffff;border:1px solid var(--line);border-radius:14px;padding:12px 18px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;box-shadow:var(--shadow)">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <span style="font-size:0.8rem;font-weight:700;color:var(--ink)">Filtrar periodo:</span>
+            <div id="actividad-period-selector" style="display:flex;gap:4px;background:#f1f5f9;padding:3px;border-radius:8px;border:1px solid #e2e8f0">
+              <button type="button" class="btn-period-actividad" data-period="hoy" style="border:0;padding:4px 12px;border-radius:6px;font-size:0.78rem;font-weight:600;cursor:pointer;background:transparent;color:#64748b;transition:all 0.15s">Hoy</button>
+              <button type="button" class="btn-period-actividad" data-period="semana" style="border:0;padding:4px 12px;border-radius:6px;font-size:0.78rem;font-weight:600;cursor:pointer;background:transparent;color:#64748b;transition:all 0.15s">Esta semana</button>
+              <button type="button" class="btn-period-actividad active" data-period="mes" style="border:0;padding:4px 12px;border-radius:6px;font-size:0.78rem;font-weight:700;cursor:pointer;background:#ffffff;color:#0f172a;box-shadow:0 1px 2px rgba(0,0,0,0.06);transition:all 0.15s">Este mes</button>
+              <button type="button" class="btn-period-actividad" data-period="todo" style="border:0;padding:4px 12px;border-radius:6px;font-size:0.78rem;font-weight:600;cursor:pointer;background:transparent;color:#64748b;transition:all 0.15s">Histórico completo</button>
+            </div>
+            <span id="actividad-badge-fecha" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;font-size:0.74rem;padding:3px 10px;border-radius:12px;font-weight:600;white-space:nowrap">
+              Inicio: Cargando...
+            </span>
+          </div>
+
+          <div id="actividad-admin-toggle" hidden>
+            <label style="font-size:0.8rem;color:#475569;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-weight:600" title="Ver actividad acumulada de todo el equipo de analistas">
+              <input type="checkbox" id="actividad-ver-global" style="cursor:pointer;accent-color:#2563eb;width:15px;height:15px">
+              <span>Vista de equipo (Global)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Alerta de Cuota Mensual en Actividad de Extracciones -->
+        <div id="actividad-cuota-alert" hidden style="display:none;background:#fff1f2;border:1px solid #fecdd3;color:#9f1239;padding:12px 16px;border-radius:12px;margin-bottom:20px;align-items:flex-start;gap:12px">
+          <svg viewBox="0 0 24 24" style="width:20px;height:20px;stroke:#e11d48;fill:none;stroke-width:2;flex-shrink:0;margin-top:2px" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div>
+            <strong style="display:block;font-size:0.92rem;color:#881337">Límite mensual de extracciones alcanzado</strong>
+            <span id="actividad-cuota-alert-text" style="font-size:0.84rem;color:#9f1239">Has alcanzado la cuota mensual de 5,000 publicaciones o 75,000 comentarios. No es posible ejecutar nuevas extracciones en vivo este mes.</span>
+          </div>
+        </div>
+
+        <!-- 4 Tarjetas de Métricas Resumen -->
+        <div class="campaign-kpis" style="grid-template-columns:repeat(4, minmax(0, 1fr));gap:14px;margin-bottom:24px">
+          <div class="campaign-kpi" style="border-top-color:#64748b;padding:16px">
+            <span style="font-weight:700;color:var(--muted);text-transform:uppercase;font-size:0.72rem;letter-spacing:0.04em;min-height:28px;display:flex;align-items:flex-end">Posts Recopilados</span>
+            <strong id="actividad-kpi-posts" style="font-size:1.8rem;color:#0f172a;font-weight:800;margin-top:8px">0</strong>
+            <span id="actividad-kpi-posts-sub" style="font-size:0.74rem;color:#94a3b8;margin-top:4px">Límite mensual: 5,000 posts</span>
+          </div>
+          <div class="campaign-kpi blue" style="padding:16px">
+            <span style="font-weight:700;color:#2563eb;text-transform:uppercase;font-size:0.72rem;letter-spacing:0.04em;min-height:28px;display:flex;align-items:flex-end">Comentarios Analizados</span>
+            <strong id="actividad-kpi-comments" style="font-size:1.8rem;color:#2563eb;font-weight:800;margin-top:8px">0</strong>
+            <span id="actividad-kpi-comments-sub" style="font-size:0.74rem;color:#94a3b8;margin-top:4px">Límite mensual: 75,000 comentarios</span>
+          </div>
+          <div class="campaign-kpi green" style="padding:16px">
+            <span style="font-weight:700;color:#059669;text-transform:uppercase;font-size:0.72rem;letter-spacing:0.04em;min-height:28px;display:flex;align-items:flex-end">Gasto Estimado</span>
+            <strong id="actividad-kpi-cost" style="font-size:1.8rem;color:#059669;font-weight:800;margin-top:8px">$0.00 USD</strong>
+            <span style="font-size:0.74rem;color:#94a3b8;margin-top:4px">Costo computacional aproximado</span>
+          </div>
+          <div class="campaign-kpi" style="border-top-color:#0284c7;padding:16px">
+            <span style="font-weight:700;color:#0284c7;text-transform:uppercase;font-size:0.72rem;letter-spacing:0.04em;min-height:28px;display:flex;align-items:flex-end">Extracciones Realizadas</span>
+            <strong id="actividad-kpi-runs" style="font-size:1.8rem;color:#0f172a;font-weight:800;margin-top:8px">0</strong>
+            <span style="font-size:0.74rem;color:#94a3b8;margin-top:4px">Sincronizaciones externas</span>
+          </div>
+        </div>
+
+        <!-- Tabla Completa de Detalle -->
+        <section class="dashboard-card wide" style="padding:22px;margin-bottom:30px">
+          <div style="margin-bottom:16px">
+            <h2 style="margin:0 0 4px 0;font-size:1.15rem;font-weight:700;color:var(--ink)">Registro de Sincronizaciones y Publicaciones</h2>
+            <p style="margin:0;font-size:0.84rem;color:var(--muted)">
+              Auditoría detallada de cada extracción ejecutada en vivo contra Facebook. Las consultas resueltas desde caché y base de datos local no generan costo computacional.
+            </p>
+          </div>
+          <div class="admin-table-wrap" style="overflow-x:auto;max-height:550px">
+            <table class="admin-table" style="width:100%;border-collapse:collapse;font-size:0.84rem">
+              <thead>
+                <tr style="border-bottom:2px solid #e2e8f0;background:#f8fafc">
+                  <th style="padding:10px 14px;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.03em;color:#475569">Fecha / Hora</th>
+                  <th style="padding:10px 14px;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.03em;color:#475569">Tipo</th>
+                  <th style="padding:10px 14px;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.03em;color:#475569">Usuario</th>
+                  <th style="padding:10px 14px;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.03em;color:#475569">Publicación / Enlace de Facebook</th>
+                  <th style="padding:10px 14px;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.03em;color:#475569;text-align:right">Posts</th>
+                  <th style="padding:10px 14px;font-size:0.76rem;text-transform:uppercase;letter-spacing:0.03em;color:#475569;text-align:right">Comentarios</th>
+                </tr>
+              </thead>
+              <tbody id="actividad-table-body"></tbody>
+            </table>
+          </div>
+          <div id="actividad-empty-state" hidden style="text-align:center;padding:40px 20px;color:#94a3b8">
+            <p style="margin:0 0 6px 0;font-size:1rem;font-weight:600;color:#475569">No hay extracciones registradas en este periodo temporal.</p>
+            <p style="margin:0;font-size:0.82rem">Las consultas resueltas desde la base de datos local y caché no generan llamadas externas ni gasto computacional.</p>
+          </div>
+        </section>
       </section>
       <section id="admin" class="panel" role="tabpanel" data-min-role="admin">
         <header class="topbar">
@@ -865,7 +1025,7 @@
   <script src="/assets/cartografia.js?v=4-3" defer></script>
   <script src="/assets/discursos.js?v=3" defer></script>
   <script src="/assets/admin.js?v=2" defer></script>
-  <script src="/assets/social.js?v=8" defer></script>
+  <script src="/assets/social.js?v=18" defer></script>
   <script src="/assets/tour.js?v=2" defer></script>
 </body>
 

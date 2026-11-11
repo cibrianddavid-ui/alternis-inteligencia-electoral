@@ -161,3 +161,20 @@ El configurador muestra la carpeta y guarda la clave sin imprimirla. Si no la en
 sin mostrarla mientras escribes o pegas. Conserva las demás variables de `.env`.
 La carga recupera una clave con formato Groq de `.env.example` como compatibilidad con versiones anteriores,
 pero solo cuando no existe una clave no vacía en el entorno o `.env`. No toma marcadores de ejemplo como claves.
+
+## Integración V4: 2015, 2021 y proveedores del chat
+
+Se añaden Google Sheets 2015 y 2021 mediante `GOOGLE_SHEET_2015_ID/GID` y
+`GOOGLE_SHEET_2021_ID/GID` en `.env`. La carga exige columnas de resultados
+compatibles con las otras fuentes (`municipio`, `seccion`, `tipo_eleccion`,
+`partido`, `votos`, `id_distrito_local`, `id_distrito_federal`, `entidad`).
+Verificar la estructura y los totales oficiales de cada hoja antes de usarla
+en producción. El arranque falla de manera explícita si alguna fuente no
+puede descargarse o no supera las validaciones.
+
+Para el chat electoral, configurar `DEEPSEEK_API_KEY` y opcionalmente
+`DEEPSEEK_MODEL=deepseek-chat`. Si no existe esa clave, se usa Groq; si DeepSeek
+responde con errores de cuota, saldo o disponibilidad, esa solicitud se
+reintenta con Groq. Los errores de autenticación no activan el respaldo.
+El análisis de noticias, redes sociales y los demás módulos siguen con Groq.
+No incluir claves reales en `.env.example` ni subir `.env` al repositorio.

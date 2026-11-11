@@ -267,13 +267,13 @@ def _bloque_kpis_sentimiento(
     bal_bg = "#dcfce7" if balance > 10 else ("#fee2e2" if balance < -15 else "#fef3c7")
 
     c_pos = Paragraph(f'<font color="#15803d">{pos_pct:.1f}%</font>', est["kpi_num"])
-    l_pos = Paragraph("🟢 Positivo", est["kpi_lbl"])
+    l_pos = Paragraph("Positivo", est["kpi_lbl"])
 
     c_neu = Paragraph(f'<font color="#64748b">{neu_pct:.1f}%</font>', est["kpi_num"])
-    l_neu = Paragraph("⚪ Neutro", est["kpi_lbl"])
+    l_neu = Paragraph("Neutro", est["kpi_lbl"])
 
     c_neg = Paragraph(f'<font color="#b91c1c">{neg_pct:.1f}%</font>', est["kpi_num"])
-    l_neg = Paragraph("🔴 Negativo", est["kpi_lbl"])
+    l_neg = Paragraph("Negativo", est["kpi_lbl"])
 
     c_bal = Paragraph(f'<font color="{bal_color}">{bal_signo}{balance:.1f}%</font>', est["kpi_num"])
     l_bal = Paragraph("Balance Neto", est["kpi_lbl"])
@@ -449,9 +449,9 @@ def pdf_perfil(data: dict[str, Any]) -> bytes:
         neutros = [c for c in comms if str(c.get("tono")) == "neutro"][:4]
 
         grupos = [
-            ("🔴 Críticas, Demandas y Reclamos", negativos, COLOR_ROJO, "#fef2f2"),
-            ("🟢 Apoyos y Simpatizantes", positivos, COLOR_VERDE, "#f0fdf4"),
-            ("⚪ Comentarios Informativos y Neutros", neutros, COLOR_GRIS, "#f8fafc"),
+            ("Críticas, Demandas y Reclamos", negativos, COLOR_ROJO, "#fef2f2"),
+            ("Apoyos y Simpatizantes", positivos, COLOR_VERDE, "#f0fdf4"),
+            ("Comentarios Informativos y Neutros", neutros, COLOR_GRIS, "#f8fafc"),
         ]
 
         for etiqueta, lista, col_borde, col_bg in grupos:
@@ -675,9 +675,9 @@ def pdf_comparativa_posts(data: dict[str, Any]) -> bytes:
             Paragraph("<b>Publicación</b>", est["celda_h"]),
             Paragraph("<b>Fecha</b>", est["celda_hc"]),
             Paragraph("<b>Comentarios</b>", est["celda_hc"]),
-            Paragraph("<b>🟢 Pos.</b>", est["celda_hc"]),
-            Paragraph("<b>⚪ Neu.</b>", est["celda_hc"]),
-            Paragraph("<b>🔴 Neg.</b>", est["celda_hc"]),
+            Paragraph("<b>Pos.</b>", est["celda_hc"]),
+            Paragraph("<b>Neu.</b>", est["celda_hc"]),
+            Paragraph("<b>Neg.</b>", est["celda_hc"]),
             Paragraph("<b>Balance</b>", est["celda_hc"]),
         ]
     ]
@@ -772,7 +772,7 @@ def pdf_comparativa_posts(data: dict[str, Any]) -> bytes:
         bal_str = f"{'+' if bal > 0 else ''}{bal:.1f}%"
 
         card_content = [
-            Paragraph(f"<b>{alias}</b> · Balance: <b>{bal_str}</b> (🟢 {pos:.0f}% · ⚪ {neu:.0f}% · 🔴 {neg:.0f}%)", est["h3"]),
+            Paragraph(f"<b>{alias}</b> · Balance: <b>{bal_str}</b> (Positivo: {pos:.0f}% · Neutro: {neu:.0f}% · Negativo: {neg:.0f}%)", est["h3"]),
             Paragraph(f"<b>Texto:</b> «{texto_p}»", est["chico"]),
             Paragraph(f"<b>Reacciones:</b> {res_p}", est["quote"]),
         ]
@@ -845,9 +845,9 @@ def pdf_evolucion_temporal(data: dict[str, Any]) -> bytes:
             Paragraph("<b>Periodo</b>", est["celda_h"]),
             Paragraph("<b>Rango de Fechas</b>", est["celda_hc"]),
             Paragraph("<b>Posts / Comms.</b>", est["celda_hc"]),
-            Paragraph("<b>🟢 Pos.</b>", est["celda_hc"]),
-            Paragraph("<b>⚪ Neu.</b>", est["celda_hc"]),
-            Paragraph("<b>🔴 Neg.</b>", est["celda_hc"]),
+            Paragraph("<b>Pos.</b>", est["celda_hc"]),
+            Paragraph("<b>Neu.</b>", est["celda_hc"]),
+            Paragraph("<b>Neg.</b>", est["celda_hc"]),
             Paragraph("<b>Balance</b>", est["celda_hc"]),
         ]
     ]
@@ -1013,7 +1013,7 @@ def pdf_evolucion_temporal(data: dict[str, Any]) -> bytes:
 
         card_p = [
             Paragraph(f"<b>Periodo {idx_p + 1}: {nom}</b> ({fechas}) · Balance: <b>{bal_str}</b>", est["h3"]),
-            Paragraph(f"<b>Volumen:</b> {posts_cnt} publicaciones identificadas · {comms_cnt} comentarios clasificados (🟢 {pos:.0f}% · ⚪ {neu:.0f}% · 🔴 {neg:.0f}%)", est["chico"]),
+            Paragraph(f"<b>Volumen:</b> {posts_cnt} publicaciones identificadas · {comms_cnt} comentarios clasificados (Positivo: {pos:.0f}% · Neutro: {neu:.0f}% · Negativo: {neg:.0f}%)", est["chico"]),
         ]
         if res_p:
             card_p.append(Paragraph(f"<b>Resumen:</b> {res_p}", est["quote"]))
@@ -1096,9 +1096,9 @@ def pdf_historico_perfil(data: dict[str, Any]) -> bytes:
             Paragraph("<b>Fechas</b>", est["celda_hc"]),
             Paragraph("<b>Posts</b>", est["celda_hc"]),
             Paragraph("<b>Comms.</b>", est["celda_hc"]),
-            Paragraph("<b>🟢 Pos.</b>", est["celda_hc"]),
-            Paragraph("<b>⚪ Neu.</b>", est["celda_hc"]),
-            Paragraph("<b>🔴 Neg.</b>", est["celda_hc"]),
+            Paragraph("<b>Pos.</b>", est["celda_hc"]),
+            Paragraph("<b>Neu.</b>", est["celda_hc"]),
+            Paragraph("<b>Neg.</b>", est["celda_hc"]),
             Paragraph("<b>Balance</b>", est["celda_hc"]),
             Paragraph("<b>Variación</b>", est["celda_hc"]),
         ]

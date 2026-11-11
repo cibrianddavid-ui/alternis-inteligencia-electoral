@@ -8,10 +8,12 @@ from typing import Any, Optional
 from .models import (
     ACTOR_POSTS,
     ACTOR_COMMENTS,
+    POSTS_REFRESH_MINUTES,
     COMMENTS_REFRESH_MINUTES,
     UNKNOWN_DATE_REFRESH_HOURS,
     UNKNOWN_DATE_REFRESH_TOP_N,
     ApifyScrapeError,
+    CuotaScrapingExcedidaError,
     _limpiar_url_facebook,
     _parse_datetime,
     _es_post_reciente,
@@ -108,11 +110,16 @@ def _normalizar_comentario(item: dict, post_url_hint: str = "") -> Optional[dict
     }
 
 
-def _obtener_posts(client: Any, url: str, max_posts: int) -> tuple[list[dict], list[dict]]:
+def _obtener_posts(client: Any, url: str, max_posts: int, usuario: str = "anonimo") -> tuple[list[dict], list[dict]]:
     """Obtiene posts recientes y top comments embebidos.
 
     Un fallo real lanza ApifyScrapeError; una respuesta válida sin posts devuelve listas vacías.
     """
+    from .db import db_verificar_cuota_scrapeo
+    permitido, msg_cuota, _ = db_verificar_cuota_scrapeo(usuario)
+    if not permitido:
+        raise CuotaScrapingExcedidaError(msg_cuota)
+
     try:
         run = client.actor(ACTOR_POSTS).call(
             run_input={
@@ -138,6 +145,14 @@ def _obtener_posts(client: Any, url: str, max_posts: int) -> tuple[list[dict], l
                     post_likes = int(raw_likes or 0)
                 except (ValueError, TypeError):
                     post_likes = 0
+
+                raw_comments = item.get("commentsCount")
+                if raw_comments is None:
+                    raw_comments = item.get("comments", 0)
+                try:
+                    post_comments = int(raw_comments or 0)
+                except (ValueError, TypeError):
+                    post_comments = 0
 
                 raw_page = item.get("page") if isinstance(item.get("page"), dict) else {}
                 raw_user = item.get("user") if isinstance(item.get("user"), dict) else {}
@@ -179,6 +194,7 @@ def _obtener_posts(client: Any, url: str, max_posts: int) -> tuple[list[dict], l
                             or ""
                         ),
                         "likes": post_likes,
+                        "comments_count": post_comments,
                         "perfil_nombre": str(perfil_nom or ""),
                         "perfil_url": str(perfil_u or ""),
                     }
@@ -189,14 +205,28 @@ def _obtener_posts(client: Any, url: str, max_posts: int) -> tuple[list[dict], l
                 if norm:
                     top_comentarios.append(norm)
 
+        try:
+            from .db import db_registrar_consumo_apify
+            db_registrar_consumo_apify(
+                usuario=usuario,
+                tipo="posts",
+                actor=ACTOR_POSTS,
+                url_objetivo=url,
+                posts_scrapeados=len(posts_meta),
+                comentarios_scrapeados=0,
+                run_id=ds_id,
+            )
+        except Exception as log_exc:
+            log.warning("No se pudo registrar consumo de posts en Apify: %s", log_exc)
+
         return posts_meta, top_comentarios
-    except ApifyScrapeError:
+    except (ApifyScrapeError, CuotaScrapingExcedidaError):
         raise
     except Exception as exc:
         raise ApifyScrapeError(f"Error obteniendo posts de Apify: {exc}") from exc
 
 
-def _obtener_comentarios(client: Any, post_url: str, max_por_post: int) -> list[dict]:
+def _obtener_comentarios(client: Any, post_url: str, max_por_post: int, usuario: str = "anonimo") -> list[dict]:
     """Obtiene comentarios de UN post.
 
     Importante: un error técnico lanza excepción. Solo una ejecución válida con dataset
@@ -204,6 +234,11 @@ def _obtener_comentarios(client: Any, post_url: str, max_por_post: int) -> list[
     """
     if not post_url:
         return []
+
+    from .db import db_verificar_cuota_scrapeo
+    permitido, msg_cuota, _ = db_verificar_cuota_scrapeo(usuario)
+    if not permitido:
+        raise CuotaScrapingExcedidaError(msg_cuota)
 
     try:
         run = client.actor(ACTOR_COMMENTS).call(
@@ -222,8 +257,23 @@ def _obtener_comentarios(client: Any, post_url: str, max_por_post: int) -> list[
             norm = _normalizar_comentario(item, post_url_hint=post_url)
             if norm:
                 comentarios.append(norm)
+
+        try:
+            from .db import db_registrar_consumo_apify
+            db_registrar_consumo_apify(
+                usuario=usuario,
+                tipo="comentarios",
+                actor=ACTOR_COMMENTS,
+                url_objetivo=post_url,
+                posts_scrapeados=0,
+                comentarios_scrapeados=len(comentarios),
+                run_id=ds_id,
+            )
+        except Exception as log_exc:
+            log.warning("No se pudo registrar consumo de comentarios en Apify: %s", log_exc)
+
         return comentarios
-    except ApifyScrapeError:
+    except (ApifyScrapeError, CuotaScrapingExcedidaError):
         raise
     except Exception as exc:
         raise ApifyScrapeError(
@@ -247,6 +297,17 @@ def _debe_refrescar_post(
     if int(estado.get("max_comentarios_scrapeados") or 0) < max_comentarios:
         return True
 
+    # Smart Delta Scrape:
+    # Si Facebook reporta la cantidad total de comentarios (comments_count > 0):
+    # - Si en BD ya tenemos registrados al menos esa misma cantidad -> no hay comentarios nuevos (False)
+    # - Si Facebook reporta más comentarios de los que tenemos en BD -> hay comentarios nuevos por extraer (True)
+    fb_comments = int(post_meta.get("comments_count") or post_meta.get("comments") or (estado and estado.get("comments_count")) or 0)
+    comms_en_bd = int((estado and estado.get("total_comentarios_en_bd")) or 0)
+    if fb_comments > 0:
+        if comms_en_bd >= fb_comments:
+            return False
+        return True
+
     ultima_actualizacion = estado.get("comentarios_actualizados_en")
     fecha_post = post_meta.get("fecha") or estado.get("fecha_post")
 
@@ -266,3 +327,55 @@ def _debe_refrescar_post(
         )
 
     return False
+
+
+def _debe_refrescar_perfil_posts(
+    url_perfil: str,
+    max_posts: int,
+    forzar_refresco: bool,
+) -> tuple[bool, list[dict]]:
+    """Determina si se deben consultar posts en Apify para el perfil dado.
+
+    Devuelve (debe_refrescar, posts_db).
+    Si debe_refrescar es False, posts_db contiene los posts vigentes ya almacenados en BD.
+    """
+    if forzar_refresco:
+        return True, []
+
+    from .db import db_obtener_posts_meta
+    posts_db = db_obtener_posts_meta(url_perfil, max_posts)
+    if not posts_db:
+        return True, []
+
+    ultimo_actualizado = max(
+        (str(p.get("actualizado") or "") for p in posts_db),
+        default="",
+    )
+    if not ultimo_actualizado:
+        ultimo_actualizado = max(
+            (str(p.get("creado") or "") for p in posts_db),
+            default="",
+        )
+
+    # Si tenemos al menos la cantidad de posts solicitada y no ha vencido el TTL
+    if len(posts_db) >= max_posts:
+        if not _esta_vencido(ultimo_actualizado, timedelta(minutes=POSTS_REFRESH_MINUTES)):
+            return False, posts_db
+        return True, posts_db
+
+    # Si hay menos posts de los pedidos en BD, pero la sincronización es reciente:
+    # Verificamos si en la última sincronización ya se había pedido esa cantidad (la página tiene pocos posts)
+    if not _esta_vencido(ultimo_actualizado, timedelta(minutes=POSTS_REFRESH_MINUTES)):
+        try:
+            from .. import basedatos
+            with basedatos.conectar() as conn:
+                tiene_cache = conn.execute(
+                    "SELECT 1 FROM social_cache WHERE url_perfil LIKE ? LIMIT 1",
+                    (f"%{url_perfil.strip()}%posts_{max_posts}%",),
+                ).fetchone()
+            if tiene_cache:
+                return False, posts_db
+        except Exception:
+            pass
+
+    return True, posts_db

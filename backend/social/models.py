@@ -36,6 +36,7 @@ TONOS_VALIDOS = {"positivo", "neutro", "negativo"}
 
 # Política de actualización incremental. Se puede ajustar por .env.
 POST_REFRESH_DAYS = int(os.environ.get("SOCIAL_POST_REFRESH_DAYS", "7"))
+POSTS_REFRESH_MINUTES = int(os.environ.get("SOCIAL_POSTS_REFRESH_MINUTES", "60"))
 COMMENTS_REFRESH_MINUTES = int(os.environ.get("SOCIAL_COMMENTS_REFRESH_MINUTES", "60"))
 UNKNOWN_DATE_REFRESH_HOURS = int(os.environ.get("SOCIAL_UNKNOWN_DATE_REFRESH_HOURS", "6"))
 UNKNOWN_DATE_REFRESH_TOP_N = int(os.environ.get("SOCIAL_UNKNOWN_DATE_REFRESH_TOP_N", "3"))
@@ -187,6 +188,9 @@ class ResultadoSocial(BaseModel):
     # balance neto de postura = %positivo - %negativo, no una encuesta.
     aprobacion_pct: float = 0.0
     error: Optional[str] = None
+    origen_datos: str = "en_vivo"  # "en_vivo" | "cache_local"
+    sincronizado_en: Optional[str] = None
+    comentarios_nuevos: int = 0
 
 
 class ErrorPost(BaseModel):
@@ -242,6 +246,10 @@ class SocialListeningError(RuntimeError):
 
 class ApifyScrapeError(SocialListeningError):
     """Fallo real de adquisición en Apify."""
+
+
+class CuotaScrapingExcedidaError(SocialListeningError):
+    """Límite mensual de publicaciones (5,000) o comentarios (75,000) alcanzado para el usuario."""
 
 
 # ---------------------------------------------------------------------------
